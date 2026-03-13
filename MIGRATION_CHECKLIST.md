@@ -29,7 +29,7 @@ Status legend:
 ## 5) App Router Structure
 - [x] Public area routes initialized
 - [x] Admin area routes initialized
-- [ ] Complete dynamic segment parity with Vite route map
+- [x] Complete dynamic segment parity with Vite route map
 
 ## 6) Public Pages Priority Port
 - [x] Home (initial API-powered baseline)
@@ -46,24 +46,24 @@ Status legend:
 
 ## 8) Admin Pages + CRUD Validation
 - [x] Admin login flow in Next
-- [x] Port Home Content CRUD page (JSON editor baseline)
-- [x] Port Lead Content CRUD page (JSON editor baseline)
-- [ ] Port remaining admin CMS pages
-- [~] Validate CRUD end-to-end to backend
+- [x] Port Home Content CRUD page (form-field editor)
+- [x] Port Lead Content CRUD page (form-field editor)
+- [x] Port admin CMS pages: News, Programs, Pages, Site Settings
+- [~] Validate CRUD end-to-end to backend (needs admin credential for write tests)
 
 ## 9) Parity Verification
 - [x] Next build passes
 - [x] Basic route smoke tests pass
 - [x] Admin auth redirect behavior tested
-- [ ] Empty-state DB full parity check across all pages
+- [~] Empty-state DB full parity check across all pages
 - [~] Cross-check UI/UX parity with Vite app
 
 ## 10) Cutover and Fallback
-- [ ] Final parity sign-off
+- [~] Final parity sign-off (technical baseline done, content/UAT pending)
 - [ ] Cutover deployment to Next.js
 - [ ] Keep Vite app available for rollback during stabilization
 - [ ] Archive Vite app after stabilization period
 
 ## Current Progress Estimate
-- Migration completion: ~58%
-- Current active phase: Step 8 + Step 9 (admin CRUD hardening and parity validation)
+- Migration completion: ~80%
+- Current active phase: Step 9 + Step 10 (full parity/UAT and cutover prep)

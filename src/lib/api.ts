@@ -253,6 +253,31 @@ export async function fetchPageBySlug(slug: string) {
   return response.data;
 }
 
+export async function fetchPages() {
+  const response = await request<ApiEnvelope<CmsPageItem[]>>('/pages');
+  return response.data;
+}
+
+export async function createPage(data: { title: string; slug: string; data: unknown; isActive?: boolean }) {
+  const response = await request<ApiEnvelope<CmsPageItem>>('/pages', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return response.data;
+}
+
+export async function updatePage(slug: string, data: Partial<{ title: string; data: unknown; isActive: boolean }>) {
+  const response = await request<ApiEnvelope<CmsPageItem>>(`/pages/${slug}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+  return response.data;
+}
+
+export async function deletePage(slug: string) {
+  await request<ApiEnvelope<null>>(`/pages/${slug}`, { method: 'DELETE' });
+}
+
 export async function fetchLecturers() {
   const response = await request<ApiEnvelope<LecturerItem[]>>('/lecturers');
   return response.data;
@@ -271,6 +296,53 @@ export async function fetchEvents(params?: Record<string, string | number | bool
 
   const suffix = query.toString() ? `?${query.toString()}` : '';
   const response = await request<ApiEnvelope<PaginatedData<EventItem>>>(`/events${suffix}`);
+  return response.data;
+}
+
+export async function createNews(data: Omit<NewsItem, 'id'>) {
+  const response = await request<ApiEnvelope<NewsItem>>('/news', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return response.data;
+}
+
+export async function updateNews(id: string, data: Partial<NewsItem>) {
+  const response = await request<ApiEnvelope<NewsItem>>(`/news/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+  return response.data;
+}
+
+export async function deleteNews(id: string) {
+  await request<ApiEnvelope<null>>(`/news/${id}`, { method: 'DELETE' });
+}
+
+export async function fetchAllPrograms() {
+  const response = await request<ApiEnvelope<ProgramItem[]>>('/programs');
+  return response.data;
+}
+
+export async function updateProgramBySlug(slug: string, data: Partial<ProgramItem>) {
+  const response = await request<ApiEnvelope<ProgramItem>>(`/programs/${slug}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+  return response.data;
+}
+
+export async function fetchSiteSettings(category?: string) {
+  const path = category ? `/site-settings/${category}` : '/site-settings';
+  const response = await request<ApiEnvelope<SiteSettingRow | SiteSettingRow[]>>(path);
+  return response.data;
+}
+
+export async function updateSiteSettings(category: string, data: unknown) {
+  const response = await request<ApiEnvelope<SiteSettingRow>>(`/site-settings/${category}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
   return response.data;
 }
 

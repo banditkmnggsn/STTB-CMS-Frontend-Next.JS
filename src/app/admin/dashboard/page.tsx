@@ -5,12 +5,30 @@ export default function AdminDashboardPage() {
     <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
       <h1 className="mb-3 text-2xl font-bold text-[#0B1F3B]">Dashboard Admin</h1>
       <p className="mb-6 text-slate-600">Halaman admin Next.js sudah aktif dan diproteksi middleware berbasis cookie token.</p>
-      <div className="mb-6 grid gap-3 sm:grid-cols-2">
-        <Link href="/admin/home-content" className="rounded-xl border border-slate-200 p-4 text-sm font-semibold text-[#0B1F3B] hover:bg-slate-50">
-          Kelola Home Content
+      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Link href="/admin/home-content" className="rounded-xl border border-slate-200 p-4 hover:bg-slate-50">
+          <div className="text-sm font-semibold text-[#0B1F3B]">Konten Homepage</div>
+          <div className="mt-1 text-xs text-slate-500">Edit hero, statistik, program showcase</div>
         </Link>
-        <Link href="/admin/lead-content" className="rounded-xl border border-slate-200 p-4 text-sm font-semibold text-[#0B1F3B] hover:bg-slate-50">
-          Kelola LEAD Content
+        <Link href="/admin/lead-content" className="rounded-xl border border-slate-200 p-4 hover:bg-slate-50">
+          <div className="text-sm font-semibold text-[#0B1F3B]">Konten LEAD</div>
+          <div className="mt-1 text-xs text-slate-500">Hero, 3 pilar, program, agenda</div>
+        </Link>
+        <Link href="/admin/news" className="rounded-xl border border-slate-200 p-4 hover:bg-slate-50">
+          <div className="text-sm font-semibold text-[#0B1F3B]">Manajemen Berita</div>
+          <div className="mt-1 text-xs text-slate-500">Buat, lihat, dan hapus artikel berita</div>
+        </Link>
+        <Link href="/admin/programs" className="rounded-xl border border-slate-200 p-4 hover:bg-slate-50">
+          <div className="text-sm font-semibold text-[#0B1F3B]">Manajemen Program</div>
+          <div className="mt-1 text-xs text-slate-500">Kelola program studi STTB</div>
+        </Link>
+        <Link href="/admin/pages" className="rounded-xl border border-slate-200 p-4 hover:bg-slate-50">
+          <div className="text-sm font-semibold text-[#0B1F3B]">Manajemen Pages</div>
+          <div className="mt-1 text-xs text-slate-500">Kelola halaman dinamis CMS</div>
+        </Link>
+        <Link href="/admin/settings" className="rounded-xl border border-slate-200 p-4 hover:bg-slate-50">
+          <div className="text-sm font-semibold text-[#0B1F3B]">Pengaturan Website</div>
+          <div className="mt-1 text-xs text-slate-500">Informasi umum dan media sosial</div>
         </Link>
       </div>
       <div className="flex flex-wrap gap-3 text-sm">
