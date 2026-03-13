@@ -26,6 +26,10 @@ export default function AdminDashboardPage() {
           <div className="text-sm font-semibold text-[#0B1F3B]">Manajemen Pages</div>
           <div className="mt-1 text-xs text-slate-500">Kelola halaman dinamis CMS</div>
         </Link>
+        <Link href="/admin/register" className="rounded-xl border border-slate-200 p-4 hover:bg-slate-50">
+          <div className="text-sm font-semibold text-[#0B1F3B]">Registrasi Admin User</div>
+          <div className="mt-1 text-xs text-slate-500">Tambah akun user baru dengan role</div>
+        </Link>
         <Link href="/admin/settings" className="rounded-xl border border-slate-200 p-4 hover:bg-slate-50">
           <div className="text-sm font-semibold text-[#0B1F3B]">Pengaturan Website</div>
           <div className="mt-1 text-xs text-slate-500">Informasi umum dan media sosial</div>

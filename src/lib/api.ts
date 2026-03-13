@@ -151,6 +151,23 @@ export type SiteSettingRow<T = unknown> = {
   updatedAt: string;
 };
 
+export type RoleItem = {
+  id: string;
+  name: string;
+};
+
+export type AdminUserItem = {
+  id: string;
+  email: string;
+  username: string;
+  name: string;
+  isActive: boolean;
+  role: {
+    id: string;
+    name: string;
+  };
+};
+
 export type LecturerItem = {
   id: string;
   name: string;
@@ -335,6 +352,26 @@ export async function updateProgramBySlug(slug: string, data: Partial<ProgramIte
 export async function fetchSiteSettings(category?: string) {
   const path = category ? `/site-settings/${category}` : '/site-settings';
   const response = await request<ApiEnvelope<SiteSettingRow | SiteSettingRow[]>>(path);
+  return response.data;
+}
+
+export async function fetchRoles() {
+  const response = await request<ApiEnvelope<RoleItem[]>>('/roles');
+  return response.data;
+}
+
+export async function createAdminUser(data: {
+  email: string;
+  username: string;
+  password: string;
+  name: string;
+  roleId: string;
+  isActive?: boolean;
+}) {
+  const response = await request<ApiEnvelope<AdminUserItem>>('/users', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
   return response.data;
 }
 

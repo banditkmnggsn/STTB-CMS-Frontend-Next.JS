@@ -11,6 +11,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link href="/admin/news" className="rounded-full border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50">Berita</Link>
           <Link href="/admin/programs" className="rounded-full border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50">Program</Link>
           <Link href="/admin/pages" className="rounded-full border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50">Pages</Link>
+          <Link href="/admin/register" className="rounded-full border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50">Register</Link>
           <Link href="/admin/settings" className="rounded-full border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50">Settings</Link>
           <Link href="/" className="ml-auto rounded-full bg-[#0B1F3B] px-3 py-1.5 text-white">Public Site</Link>
         </div>
