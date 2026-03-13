@@ -196,8 +196,29 @@ export async function fetchHomeSection<T = unknown>(section: string) {
   return response.data;
 }
 
+export async function updateHomeSection<T = unknown>(section: string, data: T) {
+  const response = await request<ApiEnvelope<HomeContentRow<T>>>(`/home-content/${section}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+  return response.data;
+}
+
 export async function fetchLeadSection<T = unknown>(section: string) {
   const response = await request<ApiEnvelope<LeadContentRow<T> | null>>(`/lead-content/${section}`);
+  return response.data;
+}
+
+export async function fetchLeadPrograms<T = unknown>() {
+  const response = await request<ApiEnvelope<T[]>>('/lead-content/programs');
+  return response.data;
+}
+
+export async function updateLeadSection<T = unknown>(section: string, data: T) {
+  const response = await request<ApiEnvelope<LeadContentRow<T>>>(`/lead-content/${section}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
   return response.data;
 }
 
