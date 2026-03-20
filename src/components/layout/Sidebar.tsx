@@ -34,7 +34,7 @@ const navItems: NavItem[] = [
   { label: 'Categories & Tags', href: '/categories',   icon: Tag             },
   { label: 'Publishing Queue',  href: '/publishing',   icon: Clock           },
   { label: 'Audit Logs',        href: '/audit-logs',   icon: ScrollText      },
-  { label: 'Users',             href: '/users',        icon: Users           },
+  { label: 'Users & Roles',     href: '/users',        icon: Users           },
   { label: 'Settings',          href: '/settings',     icon: Settings        },
 ]
 
