@@ -1,32 +1,213 @@
-'use client'
+"use client";
 
-import { PageHeader } from '@/components/admin/PageHeader'
-import { DataTable, Column } from '@/components/admin/DataTable';
-import { StatusBadge } from '@/components/admin/StatusBadge';
-import { Plus, Mail } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { PageHeader } from "@/components/admin/PageHeader";
+import { DataTable, Column } from "@/components/admin/DataTable";
+import { StatusBadge } from "@/components/admin/StatusBadge";
+import { Plus, Mail, Shield, Users, Save, Loader2 } from "lucide-react";
+import {
+  getAllUsers,
+  getAllRoles,
+  updateUser,
+  updateRolePermissions,
+  UserProfile,
+  Role,
+} from "@/services/users.service";
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  status: 'active' | 'inactive';
-  lastLogin: string;
-}
+export default function UserManagementPage() {
+  const [activeTab, setActiveTab] = useState<"users" | "roles">("users");
 
-export default function UsersPage() {
-  const users: User[] = [
-    { id: '1', name: 'John Doe', email: 'john@sttb.ac.id', role: 'Content Admin', status: 'active', lastLogin: '2026-03-09' },
-    { id: '2', name: 'Jane Smith', email: 'jane@sttb.ac.id', role: 'Editor', status: 'active', lastLogin: '2026-03-09' },
-    { id: '3', name: 'Mike Johnson', email: 'mike@sttb.ac.id', role: 'Editor', status: 'active', lastLogin: '2026-03-08' },
-    { id: '4', name: 'Sarah Williams', email: 'sarah@sttb.ac.id', role: 'Approver', status: 'active', lastLogin: '2026-03-07' },
-    { id: '5', name: 'David Brown', email: 'david@sttb.ac.id', role: 'Editor', status: 'inactive', lastLogin: '2026-02-28' },
-  ];
+  // Data States
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [rolePermissions, setRolePermissions] = useState<
+    Record<string, Record<string, string[]>>
+  >({});
 
-  const columns: Column<User>[] = [
+  // UI States
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSavingMatrix, setIsSavingMatrix] = useState(false);
+
+  // System Permissions Map (Konstan)
+  const availablePermissions = {
+    users: [
+      { id: "create", label: "Create" },
+      { id: "read", label: "Read" },
+      { id: "update", label: "Update" },
+      { id: "delete", label: "Delete" },
+    ],
+    roles: [
+      { id: "create", label: "Create" },
+      { id: "read", label: "Read" },
+      { id: "update", label: "Update" },
+      { id: "delete", label: "Delete" },
+    ],
+    articles: [
+      { id: "create", label: "Create" },
+      { id: "read", label: "Read" },
+      { id: "update", label: "Update" },
+      { id: "delete", label: "Delete" },
+      { id: "publish", label: "Publish" },
+    ],
+    programs: [
+      { id: "create", label: "Create" },
+      { id: "read", label: "Read" },
+      { id: "update", label: "Update" },
+      { id: "delete", label: "Delete" },
+    ],
+    events: [
+      { id: "create", label: "Create" },
+      { id: "read", label: "Read" },
+      { id: "update", label: "Update" },
+      { id: "delete", label: "Delete" },
+    ],
+    media: [
+      { id: "create", label: "Create" },
+      { id: "read", label: "Read" },
+      { id: "update", label: "Update" },
+      { id: "delete", label: "Delete" },
+    ],
+    homeContent: [
+      { id: "read", label: "Read" },
+      { id: "update", label: "Update" },
+    ],
+    leadContent: [
+      { id: "read", label: "Read" },
+      { id: "update", label: "Update" },
+    ],
+    pages: [
+      { id: "create", label: "Create" },
+      { id: "read", label: "Read" },
+      { id: "update", label: "Update" },
+      { id: "delete", label: "Delete" },
+    ],
+    lecturers: [
+      { id: "create", label: "Create" },
+      { id: "read", label: "Read" },
+      { id: "update", label: "Update" },
+      { id: "delete", label: "Delete" },
+    ],
+    categories: [
+      { id: "create", label: "Create" },
+      { id: "read", label: "Read" },
+      { id: "update", label: "Update" },
+      { id: "delete", label: "Delete" },
+    ],
+    tags: [
+      { id: "create", label: "Create" },
+      { id: "read", label: "Read" },
+      { id: "update", label: "Update" },
+      { id: "delete", label: "Delete" },
+    ],
+    siteSettings: [
+      { id: "read", label: "Read" },
+      { id: "update", label: "Update" },
+    ],
+    auditLogs: [{ id: "read", label: "Read" }],
+    inquiries: [
+      { id: "read", label: "Read" },
+      { id: "delete", label: "Delete" },
+    ],
+  };
+
+  // Fetch Data on Mount
+  useEffect(() => {
+    const fetchAllData = async () => {
+      setIsLoading(true);
+      try {
+        const [usersData, rolesData] = await Promise.all([
+          getAllUsers(1, 100),
+          getAllRoles(),
+        ]);
+
+        setUsers(usersData.items || []);
+        setRoles(rolesData || []);
+
+        // Petakan permission JSONB dari database ke state Matrix
+        const mappedPerms: Record<string, Record<string, string[]>> = {};
+        rolesData.forEach((r) => {
+          mappedPerms[r.id] = r.permissions || {};
+        });
+        setRolePermissions(mappedPerms);
+      } catch (error) {
+        console.error("Gagal load data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchAllData();
+  }, []);
+
+  // --- Handlers ---
+
+  // 1. Update Role User langsung via Dropdown
+  const handleUserRoleChange = async (userId: string, newRoleId: string) => {
+    try {
+      await updateUser(userId, { roleId: newRoleId });
+      // Optimistic Update UI
+      const updatedRole = roles.find((r) => r.id === newRoleId);
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === userId ? { ...u, roleId: newRoleId, role: updatedRole! } : u,
+        ),
+      );
+    } catch (error) {
+      console.error("Gagal ganti role:", error);
+      alert("Gagal mengubah role user.");
+    }
+  };
+
+  // 2. Toggle Checkbox Matrix
+  const togglePermission = (
+    roleId: string,
+    resource: string,
+    action: string,
+  ) => {
+    setRolePermissions((prev) => {
+      // Ambil data permissions untuk role tertentu
+      const roleData = prev[roleId] || {};
+      // Ambil daftar aksi untuk resource tersebut (misal: ['read', 'update'])
+      const resourceActions = roleData[resource] || [];
+
+      const isExist = resourceActions.includes(action);
+      const newActions = isExist
+        ? resourceActions.filter((a) => a !== action) // Hapus jika sudah ada
+        : [...resourceActions, action]; // Tambah jika belum ada
+
+      return {
+        ...prev,
+        [roleId]: {
+          ...roleData,
+          [resource]: newActions,
+        },
+      };
+    });
+  };
+
+  // 3. Simpan Perubahan Matrix ke DB
+  const handleSaveMatrix = async () => {
+    setIsSavingMatrix(true);
+    try {
+      // Update semua role secara paralel berdasarkan state matrix terbaru
+      await Promise.all(
+        roles.map((role) =>
+          updateRolePermissions(role.id, rolePermissions[role.id]),
+        ),
+      );
+      alert("Permission matrix berhasil disimpan!");
+    } catch (error) {
+      console.error("Gagal simpan matrix:", error);
+      alert("Terjadi kesalahan saat menyimpan permissions.");
+    } finally {
+      setIsSavingMatrix(false);
+    }
+  };
+
+  // --- Table Columns ---
+  const userColumns: Column<UserProfile>[] = [
     {
-      key: 'name',
-      label: 'User',
+      key: "name",
+      label: "User",
       sortable: true,
       render: (item) => (
         <div>
@@ -36,77 +217,254 @@ export default function UsersPage() {
             {item.email}
           </p>
         </div>
-      )
+      ),
     },
     {
-      key: 'role',
-      label: 'Role',
-      sortable: true,
+      key: "role",
+      label: "Role",
       render: (item) => (
-        <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-          {item.role}
-        </span>
-      )
+        <select
+          className="bg-blue-50 text-blue-700 text-xs font-medium px-2 py-1 rounded border border-blue-200 focus:ring-1 focus:ring-blue-500 cursor-pointer outline-none"
+          value={item.roleId || item.role?.id}
+          onChange={(e) => handleUserRoleChange(item.id, e.target.value)}
+        >
+          {roles.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.name}
+            </option>
+          ))}
+        </select>
+      ),
     },
     {
-      key: 'status',
-      label: 'Status',
-      sortable: true,
-      render: (item) => <StatusBadge status={item.status} />
-    },
-    {
-      key: 'lastLogin',
-      label: 'Last Login',
-      sortable: true,
-      render: (item) => new Date(item.lastLogin).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      })
+      key: "status",
+      label: "Status",
+      render: (item) => (
+        <StatusBadge status={item.isActive ? "active" : "inactive"} />
+      ),
     },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="p-8 flex items-center gap-2">
+        <Loader2 className="animate-spin text-[#C1121F]" /> Loading Data...
+      </div>
+    );
+  }
 
   return (
     <>
       <PageHeader
-        title="User Management"
-        description="Manage system users and their access"
-        breadcrumbs={[{ label: 'Users' }]}
+        title="Access Management"
+        description="Manage users, roles, and system permissions in one place."
+        breadcrumbs={[{ label: "User Management" }]}
         actions={
-          <button className="px-4 py-2 bg-[#C1121F] text-white rounded-lg hover:bg-[#9A0E19] transition-colors flex items-center gap-2">
+          <button className="px-4 py-2 bg-[#C1121F] text-white rounded-lg hover:bg-[#9A0E19] flex items-center gap-2 transition-colors text-sm">
             <Plus size={18} />
-            Add User
+            {activeTab === "users" ? "Add User" : "Create Role"}
           </button>
         }
       />
 
       <div className="p-8">
-        <DataTable
-          columns={columns}
-          data={users}
-          selectable
-          emptyMessage="No users found"
-        />
-
-        {/* User Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <p className="text-sm text-gray-600 mb-1">Total Users</p>
-            <p className="text-2xl font-bold text-gray-900">{users.length}</p>
-          </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <p className="text-sm text-gray-600 mb-1">Active Users</p>
-            <p className="text-2xl font-bold text-green-600">{users.filter(u => u.status === 'active').length}</p>
-          </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <p className="text-sm text-gray-600 mb-1">Admins</p>
-            <p className="text-2xl font-bold text-blue-600">{users.filter(u => u.role === 'Content Admin').length}</p>
-          </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <p className="text-sm text-gray-600 mb-1">Editors</p>
-            <p className="text-2xl font-bold text-purple-600">{users.filter(u => u.role === 'Editor').length}</p>
-          </div>
+        {/* Tab Switcher */}
+        <div className="flex border-b border-gray-200 mb-6">
+          <button
+            onClick={() => setActiveTab("users")}
+            className={`px-6 py-3 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors ${
+              activeTab === "users"
+                ? "border-[#C1121F] text-[#C1121F]"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <Users size={18} /> Users
+          </button>
+          <button
+            onClick={() => setActiveTab("roles")}
+            className={`px-6 py-3 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors ${
+              activeTab === "roles"
+                ? "border-[#C1121F] text-[#C1121F]"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <Shield size={18} /> Roles & Permissions
+          </button>
         </div>
+
+        {activeTab === "users" ? (
+          <div className="space-y-8">
+            <DataTable columns={userColumns} data={users} selectable />
+
+            {/* User Stats Widget */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
+              <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <p className="text-sm text-gray-600 mb-1">Total Users</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {users.length}
+                </p>
+              </div>
+              <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <p className="text-sm text-gray-600 mb-1">Admins</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {
+                    users.filter((u) =>
+                      u.role?.name?.toLowerCase().includes("admin"),
+                    ).length
+                  }
+                </p>
+              </div>
+              <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <p className="text-sm text-gray-600 mb-1">Author</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {
+                    users.filter((u) =>
+                      u.role?.name?.toLowerCase().includes("author"),
+                    ).length
+                  }
+                </p>
+              </div>
+              <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <p className="text-sm text-gray-600 mb-1">Editors</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  {
+                    users.filter((u) =>
+                      u.role?.name?.toLowerCase().includes("editor"),
+                    ).length
+                  }
+                </p>
+              </div>
+            </div>
+            {/* End User Stats Widget */}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Roles List */}
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden h-fit">
+              <div className="px-6 py-4 border-b bg-gray-50">
+                <h3 className="font-semibold">Available Roles</h3>
+              </div>
+              <div className="divide-y max-h-[500px] overflow-y-auto">
+                {roles.map((role) => (
+                  <div
+                    key={role.id}
+                    className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-medium text-gray-900 capitalize">
+                          {role.name}
+                        </p>
+                        {role.description && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            {role.description}
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
+                        {role._count?.users || 0} users
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Permission Matrix */}
+            <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 flex flex-col">
+              <div className="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
+                <div>
+                  <h3 className="font-semibold">Permission Matrix</h3>
+                  <p className="text-xs text-gray-500">
+                    Define what each role can perform
+                  </p>
+                </div>
+                <button
+                  onClick={handleSaveMatrix}
+                  disabled={isSavingMatrix}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors disabled:opacity-50"
+                >
+                  {isSavingMatrix ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Save size={14} />
+                  )}
+                  {isSavingMatrix ? "Saving..." : "Save Matrix"}
+                </button>
+              </div>
+              <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-white border-b sticky top-0 z-10">
+                    <tr>
+                      <th className="px-6 py-3 text-left font-medium text-gray-600 uppercase tracking-wider text-[10px] bg-white">
+                        Capability
+                      </th>
+                      {roles.map((r) => (
+                        <th
+                          key={r.id}
+                          className="px-3 py-3 text-center font-medium text-gray-600 uppercase tracking-wider text-[10px] bg-white border-l border-gray-100"
+                        >
+                          {r.name}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {Object.entries(availablePermissions).map(
+                      ([resource, actions]) => (
+                        <React.Fragment key={resource}>
+                          {/* Header Resource (Contoh: ARTICLES, USERS) */}
+                          <tr className="bg-gray-50/80">
+                            <td
+                              colSpan={roles.length + 1}
+                              className="px-6 py-2 font-bold text-[10px] text-gray-400 uppercase tracking-widest"
+                            >
+                              {resource.replace(/([A-Z])/g, " $1")}
+                            </td>
+                          </tr>
+                          {actions.map((action) => (
+                            <tr
+                              key={`${resource}-${action.id}`}
+                              className="hover:bg-gray-50 transition-colors"
+                            >
+                              <td className="px-6 py-3 text-gray-700 text-xs pl-10">
+                                {action.label}
+                              </td>
+                              {roles.map((r) => (
+                                <td
+                                  key={r.id}
+                                  className="px-3 py-3 text-center border-l border-gray-100"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    // Cek: rolePermissions[roleId][resource] includes 'actionId'
+                                    checked={
+                                      rolePermissions[r.id]?.[
+                                        resource
+                                      ]?.includes(action.id) || false
+                                    }
+                                    onChange={() =>
+                                      togglePermission(
+                                        r.id,
+                                        resource,
+                                        action.id,
+                                      )
+                                    }
+                                    className="w-4 h-4 rounded border-gray-300 text-[#C1121F] focus:ring-[#C1121F] cursor-pointer"
+                                  />
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </React.Fragment>
+                      ),
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

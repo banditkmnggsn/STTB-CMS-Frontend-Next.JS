@@ -1,9 +1,9 @@
 login page
 hilangin quick akses dan Demo Credentials:
 Email: admin@sttb.ac.id
-Password: admin123
+Password: admin123 (done)
 
-bikin create account untuk login, hapus tombol register terpisah di page home
+bikin create account untuk login, hapus tombol register terpisah di page home (angga)
 
 dashboard page
 ganti info yang mudah aja dan udah ada api nya misal kaya publishing/last update
