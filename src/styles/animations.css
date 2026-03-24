@@ -1,0 +1,241 @@
+/* Professional Micro-interactions and Animations */
+
+/* Navigation Hover Effects */
+.nav-link {
+  position: relative;
+  transition: color 250ms ease-out;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--color-bright-blue);
+  transition: width 300ms ease-out;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+.nav-link:hover {
+  color: var(--color-bright-blue);
+}
+
+/* Dropdown Menu Animations */
+.dropdown-menu {
+  animation: slideDown 200ms ease-out;
+  transform-origin: top;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Button Animations */
+.btn-primary,
+.btn-secondary {
+  transition: all 200ms ease-out;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(193, 18, 31, 0.25);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+  box-shadow: 0 4px 8px rgba(193, 18, 31, 0.2);
+}
+
+.btn-secondary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(11, 31, 59, 0.2);
+}
+
+.btn-secondary:active {
+  transform: scale(0.98);
+  box-shadow: 0 4px 8px rgba(11, 31, 59, 0.15);
+}
+
+/* Card Hover Effects */
+.card-hover {
+  transition: transform 300ms ease-out, box-shadow 300ms ease-out;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* Icon Button Hover */
+.icon-button {
+  transition: all 250ms ease-out;
+}
+
+.icon-button:hover {
+  transform: scale(1.05);
+  color: var(--color-bright-blue);
+}
+
+/* Link Hover Effects */
+.link-hover {
+  transition: color 200ms ease-out;
+}
+
+.link-hover:hover {
+  color: var(--color-bright-blue);
+}
+
+/* Page Transition */
+.page-enter {
+  animation: fadeInUp 400ms ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Smooth Scroll Behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Focus States */
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible {
+  outline: 2px solid var(--color-bright-blue);
+  outline-offset: 2px;
+}
+
+/* Mobile Menu Animation */
+.mobile-menu {
+  animation: slideInRight 250ms ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Subtle Scale on Hover for Interactive Elements */
+.scale-hover {
+  transition: transform 200ms ease-out;
+}
+
+.scale-hover:hover {
+  transform: scale(1.02);
+}
+
+/* Footer Link Hover */
+.footer-link {
+  transition: color 200ms ease-out;
+}
+
+.footer-link:hover {
+  color: var(--color-bright-blue);
+}
+
+/* Stat Counter Animation */
+.stat-card {
+  transition: transform 250ms ease-out, box-shadow 250ms ease-out;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* Tab Hover Effect */
+.tab-button {
+  position: relative;
+  transition: color 200ms ease-out;
+}
+
+.tab-button::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-cabai-red);
+  transform: scaleX(0);
+  transition: transform 250ms ease-out;
+}
+
+.tab-button.active::before,
+.tab-button:hover::before {
+  transform: scaleX(1);
+}
+
+/* Form Input Focus */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--color-bright-blue);
+  box-shadow: 0 0 0 3px rgba(46, 144, 255, 0.1);
+  transition: all 200ms ease-out;
+}
+
+/* Loading Spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* Pulse Animation for Important Elements */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Image Hover Zoom */
+.image-zoom-container {
+  overflow: hidden;
+}
+
+.image-zoom {
+  transition: transform 400ms ease-out;
+}
+
+.image-zoom-container:hover .image-zoom {
+  transform: scale(1.05);
+}

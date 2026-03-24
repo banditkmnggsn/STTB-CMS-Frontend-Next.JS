@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   description: 'Migration baseline from Vite React to Next.js App Router.',
 };
 
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -30,3 +33,4 @@ export default function RootLayout({
     </html>
   );
 }
+

@@ -14,6 +14,8 @@ type NewsForm = {
   excerpt: string;
   content: string;
   featuredImage: string;
+  status: string;
+  categoryId: string;
 };
 
 const emptyForm: NewsForm = {
@@ -22,6 +24,8 @@ const emptyForm: NewsForm = {
   excerpt: '',
   content: '',
   featuredImage: '',
+  status: 'published',
+  categoryId: '',
 };
 
 export default function AdminNewsPage() {
@@ -31,6 +35,7 @@ export default function AdminNewsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
 
   useEffect(() => {
     void load();
@@ -39,8 +44,14 @@ export default function AdminNewsPage() {
   async function load() {
     setLoading(true);
     try {
-      const res = await fetchNews({ limit: 50 });
+      // @ts-ignore - dynamic import error ignore
+      const { fetchCategories } = await import('@/lib/api');
+      const [res, catRes] = await Promise.all([
+        fetchNews({ limit: 50 }),
+        fetchCategories()
+      ]);
       setItems(res?.items ?? []);
+      setCategories(catRes ?? []);
     } catch {
       setMessage('Gagal memuat berita. Periksa koneksi backend.');
     } finally {
@@ -68,7 +79,10 @@ export default function AdminNewsPage() {
         excerpt: form.excerpt || null,
         content: form.content,
         featuredImage: form.featuredImage || null,
-      });
+        status: form.status,
+        ...(form.categoryId ? { categoryId: form.categoryId } : {}),
+        ...(form.status === 'published' ? { publishDate: new Date().toISOString() } : {})
+      } as unknown as Omit<NewsItem, 'id'>);
       setItems((p) => [newItem, ...p]);
       setForm(emptyForm);
       setShowForm(false);
@@ -139,6 +153,20 @@ export default function AdminNewsPage() {
           <div>
             <label className={labelCls}>Ringkasan</label>
             <textarea className={inputCls} rows={2} value={form.excerpt} onChange={(e) => setForm((p) => ({ ...p, excerpt: e.target.value }))} />
+          </div>
+          <div>
+            <label className={labelCls}>Status Publikasi</label>
+            <select className={inputCls} value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}>
+              <option value="published">Published (Langsung Tayang)</option>
+              <option value="draft">Draft (Simpan sementara)</option>
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Kategori</label>
+            <select className={inputCls} value={form.categoryId} onChange={(e) => setForm((p) => ({ ...p, categoryId: e.target.value }))}>
+              <option value="">Pilih Kategori...</option>
+              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
           </div>
           <div>
             <label className={labelCls}>Konten</label>

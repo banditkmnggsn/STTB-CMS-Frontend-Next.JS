@@ -239,6 +239,17 @@ export async function updateLeadSection<T = unknown>(section: string, data: T) {
   return response.data;
 }
 
+export type CategoryItem = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+export async function fetchCategories() {
+  const response = await request<ApiEnvelope<CategoryItem[]>>('/categories');
+  return response.data;
+}
+
 export async function fetchNews(params?: Record<string, string | number | boolean | undefined>) {
   const query = new URLSearchParams();
 
@@ -380,6 +391,11 @@ export async function updateSiteSettings(category: string, data: unknown) {
     method: 'PUT',
     body: JSON.stringify(data),
   });
+  return response.data;
+}
+
+export async function fetchPublicData<T = any>(path: string) {
+  const response = await request<ApiEnvelope<T>>(path);
   return response.data;
 }
 
