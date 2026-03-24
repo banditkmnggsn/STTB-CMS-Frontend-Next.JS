@@ -1,75 +1,152 @@
-'use client'
-import { useState } from 'react';
-import { PageHeader } from '@/components/admin/PageHeader';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Save, Plus, Trash2, MoveUp, MoveDown, Eye } from 'lucide-react';
-import { mockHomeHero, mockHomeStats, mockHomeProgramShowcase } from '@/lib/mock-data/mockCMSData';
-import type { HomeHeroContent, HomeStatsItem, HomeProgramShowcase } from '@/lib/mock-data/contentModels';
+"use client";
 
+import { useState, useEffect } from "react";
+import { homeContentService } from "@/services/home-content.service";
+import { PageHeader } from "@/components/admin/PageHeader";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Save,
+  Plus,
+  Trash2,
+  MoveUp,
+  MoveDown,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  Image as ImageIcon,
+} from "lucide-react";
+import * as Icons from "lucide-react";
+import { HelpCircle } from "lucide-react";
+import { toast } from "sonner";
+
+const IconPreview = ({ name }: { name: string }) => {
+  const LucideIcon = (Icons as any)[name];
+  return LucideIcon ? (
+    <LucideIcon className="h-5 w-5 text-[#C1121F]" />
+  ) : (
+    <Icons.HelpCircle className="h-5 w-5 text-slate-300" />
+  );
+};
 export default function HomeContentPage() {
-  const [heroData, setHeroData] = useState<HomeHeroContent>(mockHomeHero);
-  const [statsData, setStatsData] = useState<HomeStatsItem[]>(mockHomeStats);
-  const [showcaseData, setShowcaseData] = useState<HomeProgramShowcase[]>(mockHomeProgramShowcase);
+  // --- STATES ---
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState('');
+  const [alert, setAlert] = useState<{
+    type: "success" | "error" | "";
+    message: string;
+  }>({ type: "", message: "" });
+  // Data States (Mapping ke JSONB Backend)
+  const [hero, setHero] = useState<any>({
+    title: "",
+    subtitle: "",
+    description: "",
+    primaryButtonText: "",
+    primaryButtonLink: "",
+    secondaryButtonText: "",
+    secondaryButtonLink: "",
+    backgroundImage: "",
+  });
+  const [stats, setStats] = useState<any[]>([]);
+  const [programs, setPrograms] = useState<any[]>([]);
+  const [pillars, setPillars] = useState<any[]>([]); // Why Choose
+  const [facilities, setFacilities] = useState<any[]>([]);
+  const [cta, setCta] = useState<any>({});
 
-  const handleSave = async (section: string) => {
-    setIsSaving(true);
-    setSaveMessage('');
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setSaveMessage(`${section} berhasil disimpan!`);
-    setIsSaving(false);
-    
-    setTimeout(() => setSaveMessage(''), 3000);
-  };
+  // --- FETCH DATA ---
+// Ganti seluruh isi useEffect loadInitialData dengan ini:
 
-  const updateHeroField = (field: keyof HomeHeroContent, value: any) => {
-    setHeroData(prev => ({ ...prev, [field]: value }));
-  };
+useEffect(() => {
+  const loadInitialData = async () => {
+    try {
+      setIsLoading(true);
 
-  const updateStatsItem = (index: number, field: keyof HomeStatsItem, value: any) => {
-    setStatsData(prev => {
-      const newData = [...prev];
-      newData[index] = { ...newData[index], [field]: value };
-      return newData;
-    });
-  };
+      // getSection() sekarang langsung mengembalikan konten —
+      // tidak ada lagi layer .data atau .data.data yang perlu di-unwrap di sini.
+      const [heroData, statsData, showcaseData, pillarsData, facilitiesData] =
+        await Promise.all([
+          homeContentService.getSection('hero'),
+          homeContentService.getSection('stats'),
+          homeContentService.getSection('showcase'),
+          homeContentService.getSection('pillars'),
+          homeContentService.getSection('facilities'),
+        ]);
 
-  const moveStatsItem = (index: number, direction: 'up' | 'down') => {
-    if (
-      (direction === 'up' && index === 0) ||
-      (direction === 'down' && index === statsData.length - 1)
-    ) {
-      return;
+      if (heroData) {
+        setHero({
+          title:               heroData.title               || '',
+          subtitle:            heroData.subtitle            || '',
+          description:         heroData.description         || '',
+          primaryButtonText:   heroData.primaryButtonText   || '',
+          primaryButtonLink:   heroData.primaryButtonLink   || '',
+          secondaryButtonText: heroData.secondaryButtonText || '',
+          secondaryButtonLink: heroData.secondaryButtonLink || '',
+          backgroundImage:     heroData.backgroundImage     || '',
+        });
+      }
+
+      setStats(     Array.isArray(statsData)     ? statsData     : []);
+      setPrograms(  Array.isArray(showcaseData)  ? showcaseData  : []);
+      setPillars(   Array.isArray(pillarsData)   ? pillarsData   : []);
+      setFacilities(Array.isArray(facilitiesData)? facilitiesData: []);
+
+    } catch (error) {
+      console.error('Gagal load data:', error);
+      toast.error('Gagal mengambil data dari server');
+    } finally {
+      setIsLoading(false);
     }
-
-    setStatsData(prev => {
-      const newData = [...prev];
-      const swapIndex = direction === 'up' ? index - 1 : index + 1;
-      [newData[index], newData[swapIndex]] = [newData[swapIndex], newData[index]];
-      
-      // Update order
-      newData[index].order = index + 1;
-      newData[swapIndex].order = swapIndex + 1;
-      
-      return newData;
-    });
   };
 
-  const updateShowcaseItem = (index: number, field: keyof HomeProgramShowcase, value: any) => {
-    setShowcaseData(prev => {
-      const newData = [...prev];
-      newData[index] = { ...newData[index], [field]: value };
-      return newData;
+  loadInitialData();
+}, []);
+
+  // --- HANDLERS ---
+  const handleSave = async (section: string, data: any) => {
+    try {
+      setIsSaving(true);
+
+      // Kirim langsung ke endpoint /api/home-content/:section
+      // Pastikan service Anda melakukan PUT request
+      await homeContentService.updateSection(section, data);
+
+      toast.success(`Berhasil memperbarui section ${section}`);
+    } catch (error) {
+      console.error("Save error:", error);
+      toast.error(`Gagal menyimpan ${section}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Helper untuk tambah item di array (Stats, Program, Pillars, Facilities)
+  const addItem = (setter: any, template: any) =>
+    setter((prev: any) => [...prev, { ...template, id: Date.now() }]);
+
+  const removeItem = (setter: any, index: number) =>
+    setter((prev: any) => prev.filter((_: any, i: number) => i !== index));
+
+  const updateArrayField = (
+    setter: React.Dispatch<React.SetStateAction<any[]>>,
+    index: number,
+    field: string,
+    value: any,
+  ) => {
+    setter((prev) => {
+      const newArr = [...prev];
+      newArr[index] = { ...newArr[index], [field]: value };
+      return newArr;
     });
   };
 
@@ -77,34 +154,41 @@ export default function HomeContentPage() {
     <>
       <PageHeader
         title="Konten Homepage"
-        description="Kelola semua konten yang tampil di halaman utama website"
+        description="Kelola teks, gambar, dan urutan konten di halaman utama."
         breadcrumbs={[
-            { label: 'Dashboard', path: '/dashboard' },
-          { label: 'Konten Homepage' }
+          { label: "Dashboard", path: "/dashboard" },
+          { label: "Konten Homepage" },
         ]}
       />
 
-      <div className="p-8">
-        {saveMessage && (
-          <Alert className="mb-6 bg-green-50 border-green-200">
-            <AlertDescription className="text-green-800">
-              {saveMessage}
-            </AlertDescription>
+      <div className="p-8 max-w-6xl mx-auto space-y-6">
+        {alert.message && (
+          <Alert
+            className={`${alert.type === "success" ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}
+          >
+            <div className="flex items-center gap-2">
+              {alert.type === "success" ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : (
+                <AlertCircle className="h-4 w-4" />
+              )}
+              <AlertDescription>{alert.message}</AlertDescription>
+            </div>
           </Alert>
         )}
 
         <Tabs defaultValue="hero" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 max-w-4xl">
+          <TabsList className="bg-slate-100 p-1 w-full flex overflow-x-auto justify-start">
             <TabsTrigger value="hero">Hero</TabsTrigger>
             <TabsTrigger value="stats">Statistik</TabsTrigger>
             <TabsTrigger value="showcase">Program</TabsTrigger>
-            <TabsTrigger value="why-choose">Why Choose</TabsTrigger>
+            <TabsTrigger value="pillars">Why Choose</TabsTrigger>
             <TabsTrigger value="facilities">Fasilitas</TabsTrigger>
             <TabsTrigger value="cta">CTA</TabsTrigger>
           </TabsList>
 
-          {/* HERO SECTION */}
-          <TabsContent value="hero" className="space-y-6">
+          {/* SECTION: HERO */}
+          <TabsContent value="hero">
             <Card>
               <CardHeader>
                 <CardTitle>Hero Section</CardTitle>
@@ -113,344 +197,739 @@ export default function HomeContentPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="hero-title">Judul Utama</Label>
-                  <Input
-                    id="hero-title"
-                    value={heroData.title}
-                    onChange={(e) => updateHeroField('title', e.target.value)}
-                    placeholder="Membentuk Pemimpin Rohani Masa Depan"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="hero-subtitle">Subtitle</Label>
-                  <Input
-                    id="hero-subtitle"
-                    value={heroData.subtitle}
-                    onChange={(e) => updateHeroField('subtitle', e.target.value)}
-                    placeholder="STTB Bandung"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="hero-description">Deskripsi</Label>
-                  <Textarea
-                    id="hero-description"
-                    value={heroData.description}
-                    onChange={(e) => updateHeroField('description', e.target.value)}
-                    rows={4}
-                    placeholder="Pendidikan Teologi Berkualitas..."
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="primary-btn-text">Tombol Utama - Teks</Label>
-                    <Input
-                      id="primary-btn-text"
-                      value={heroData.primaryButtonText}
-                      onChange={(e) => updateHeroField('primaryButtonText', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="primary-btn-link">Tombol Utama - Link</Label>
-                    <Input
-                      id="primary-btn-link"
-                      value={heroData.primaryButtonLink}
-                      onChange={(e) => updateHeroField('primaryButtonLink', e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="secondary-btn-text">Tombol Sekunder - Teks</Label>
-                    <Input
-                      id="secondary-btn-text"
-                      value={heroData.secondaryButtonText}
-                      onChange={(e) => updateHeroField('secondaryButtonText', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="secondary-btn-link">Tombol Sekunder - Link</Label>
-                    <Input
-                      id="secondary-btn-link"
-                      value={heroData.secondaryButtonLink}
-                      onChange={(e) => updateHeroField('secondaryButtonLink', e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="hero-bg">Background Image URL</Label>
-                  <Input
-                    id="hero-bg"
-                    value={heroData.backgroundImage}
-                    onChange={(e) => updateHeroField('backgroundImage', e.target.value)}
-                    placeholder="https://..."
-                  />
-                  {heroData.backgroundImage && (
-                    <div className="mt-2">
-                      <img 
-                        src={heroData.backgroundImage} 
-                        alt="Preview" 
-                        className="h-32 w-full object-cover rounded-md"
+                <div className="grid gap-4">
+                  {/* Row 1: Judul & Subtitle */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Judul Utama</Label>
+                      <Input
+                        value={hero?.title || ""}
+                        onChange={(e) =>
+                          setHero((prev: any) => ({
+                            ...prev,
+                            title: e.target.value,
+                          }))
+                        }
                       />
                     </div>
-                  )}
+                    <div className="space-y-2">
+                      <Label>Subtitle</Label>
+                      <Input
+                        placeholder="Masukkan subtitle..."
+                        // Gunakan optional chaining (?.) dan fallback string kosong
+                        value={hero?.subtitle || ""}
+                        onChange={(e) =>
+                          // Cegah spread null dengan pengecekan hero
+                          setHero(
+                            hero
+                              ? { ...hero, subtitle: e.target.value }
+                              : { subtitle: e.target.value },
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {/* Row 2: Deskripsi */}
+                  <div className="space-y-2">
+                    <Label>Deskripsi</Label>
+                    <Textarea
+                      placeholder="Masukkan deskripsi hero..."
+                      rows={4}
+                      value={hero?.description || ""}
+                      onChange={(e) =>
+                        setHero(
+                          hero
+                            ? { ...hero, description: e.target.value }
+                            : { description: e.target.value },
+                        )
+                      }
+                    />
+                  </div>
+
+                  {/* Row 3: Buttons Container */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 border rounded-lg bg-slate-50/50">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-blue-600 font-semibold">
+                          Tombol Utama - Teks
+                        </Label>
+                        <Input
+                          value={hero?.primaryButtonText || ""}
+                          onChange={(e) =>
+                            setHero(
+                              hero
+                                ? { ...hero, primaryButtonText: e.target.value }
+                                : { primaryButtonText: e.target.value },
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-blue-600 font-semibold">
+                          Tombol Utama - Link
+                        </Label>
+                        <Input
+                          value={hero?.primaryButtonLink || ""}
+                          onChange={(e) =>
+                            setHero(
+                              hero
+                                ? { ...hero, primaryButtonLink: e.target.value }
+                                : { primaryButtonLink: e.target.value },
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-slate-600 font-semibold">
+                          Tombol Sekunder - Teks
+                        </Label>
+                        <Input
+                          value={hero?.secondaryButtonText || ""}
+                          onChange={(e) =>
+                            setHero(
+                              hero
+                                ? {
+                                    ...hero,
+                                    secondaryButtonText: e.target.value,
+                                  }
+                                : { secondaryButtonText: e.target.value },
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-slate-600 font-semibold">
+                          Tombol Sekunder - Link
+                        </Label>
+                        <Input
+                          value={hero?.secondaryButtonLink || ""}
+                          onChange={(e) =>
+                            setHero(
+                              hero
+                                ? {
+                                    ...hero,
+                                    secondaryButtonLink: e.target.value,
+                                  }
+                                : { secondaryButtonLink: e.target.value },
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Row 4: Image URL */}
+                  <div className="space-y-2">
+                    <Label>Background Image URL</Label>
+                    <Input
+                      placeholder="https://images.unsplash.com/..."
+                      value={hero?.backgroundImage || ""}
+                      onChange={(e) =>
+                        setHero(
+                          hero
+                            ? { ...hero, backgroundImage: e.target.value }
+                            : { backgroundImage: e.target.value },
+                        )
+                      }
+                    />
+                  </div>
                 </div>
 
-                <div className="flex gap-3 pt-4">
-                  <Button 
-                    onClick={() => handleSave('Hero Section')} 
-                    disabled={isSaving}
-                    className="bg-[#C1121F] hover:bg-[#9A0E19]"
-                  >
+                <Button
+                  onClick={() => handleSave("hero", hero)}
+                  disabled={isSaving}
+                  className="bg-[#C1121F] hover:bg-[#9A0E19] mt-4"
+                >
+                  {isSaving ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
                     <Save className="mr-2 h-4 w-4" />
-                    {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
-                  </Button>
-                  <Button variant="outline">
-                    <Eye className="mr-2 h-4 w-4" />
-                    Preview
-                  </Button>
-                </div>
+                  )}
+                  Simpan Hero
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* STATS SECTION */}
-          <TabsContent value="stats" className="space-y-6">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h3 className="text-lg font-semibold">Statistik STTB</h3>
-                <p className="text-sm text-gray-600">Angka-angka penting yang ditampilkan di homepage</p>
+          {/* SECTION: STATS */}
+          <TabsContent value="stats" className="space-y-4">
+            <div className="flex justify-between items-center bg-white p-4 rounded-lg border">
+              <div className="text-sm font-medium text-slate-500">
+                Statistik STTB
               </div>
-              <Button variant="outline" size="sm">
-                <Plus className="mr-2 h-4 w-4" />
-                Tambah Statistik
-              </Button>
-            </div>
-
-            {statsData.map((stat, index) => (
-              <Card key={stat.id}>
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-base">Statistik #{index + 1}</CardTitle>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => moveStatsItem(index, 'up')}
-                        disabled={index === 0}
-                      >
-                        <MoveUp className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => moveStatsItem(index, 'down')}
-                        disabled={index === statsData.length - 1}
-                      >
-                        <MoveDown className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-red-600">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Icon (Lucide React)</Label>
-                      <Input
-                        value={stat.icon}
-                        onChange={(e) => updateStatsItem(index, 'icon', e.target.value)}
-                        placeholder="GraduationCap"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Contoh: GraduationCap, Users, BookOpen, Award
-                      </p>
-                    </div>
-                    <div>
-                      <Label>Nilai</Label>
-                      <Input
-                        value={stat.value}
-                        onChange={(e) => updateStatsItem(index, 'value', e.target.value)}
-                        placeholder="7, 500+, etc"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label>Label</Label>
-                    <Input
-                      value={stat.label}
-                      onChange={(e) => updateStatsItem(index, 'label', e.target.value)}
-                      placeholder="Program Studi"
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Deskripsi</Label>
-                    <Textarea
-                      value={stat.description}
-                      onChange={(e) => updateStatsItem(index, 'description', e.target.value)}
-                      rows={2}
-                      placeholder="Beragam pilihan program..."
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-
-            <div className="flex gap-3">
-              <Button 
-                onClick={() => handleSave('Statistik')} 
-                disabled={isSaving}
-                className="bg-[#C1121F] hover:bg-[#9A0E19]"
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  addItem(setStats, {
+                    icon: "GraduationCap",
+                    value: "",
+                    label: "",
+                    description: "",
+                  })
+                }
               >
+                <Plus className="h-4 w-4 mr-1" /> Tambah Statistik
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              {stats.map((item, idx) => (
+                <Card key={idx}>
+                  <CardContent className="pt-6 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-slate-400">
+                        Statistik #{idx + 1}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeItem(setStats, idx)}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Icon (Lucide React)</Label>
+                        <Input
+                          value={item.icon}
+                          onChange={(e) =>
+                            updateArrayField(
+                              setStats,
+                              idx,
+                              "icon",
+                              e.target.value,
+                            )
+                          }
+                          placeholder="Contoh: GraduationCap, Users, Award"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Nilai</Label>
+                        <Input
+                          value={item.value}
+                          onChange={(e) =>
+                            updateArrayField(
+                              setStats,
+                              idx,
+                              "value",
+                              e.target.value,
+                            )
+                          }
+                          placeholder="7"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Label</Label>
+                      <Input
+                        value={item.label}
+                        onChange={(e) =>
+                          updateArrayField(
+                            setStats,
+                            idx,
+                            "label",
+                            e.target.value,
+                          )
+                        }
+                        placeholder="Program Studi"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Deskripsi</Label>
+                      <Textarea
+                        value={item.description}
+                        onChange={(e) =>
+                          updateArrayField(
+                            setStats,
+                            idx,
+                            "description",
+                            e.target.value,
+                          )
+                        }
+                        placeholder="Beragam pilihan program sarjana dan magister"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <Button
+              onClick={() => handleSave("stats", stats)}
+              disabled={isSaving}
+              className="bg-[#C1121F]"
+            >
+              {isSaving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
                 <Save className="mr-2 h-4 w-4" />
-                Simpan Semua Statistik
-              </Button>
-            </div>
+              )}
+              Simpan Statistik
+            </Button>
           </TabsContent>
-
-          {/* SHOWCASE SECTION */}
-          <TabsContent value="showcase" className="space-y-6">
-            <div className="flex justify-between items-center mb-4">
+          {/* SECTION: PROGRAM (SHOWCASE) */}
+          <TabsContent value="showcase" className="space-y-4">
+            <div className="flex justify-between items-center bg-white p-4 rounded-lg border">
               <div>
-                <h3 className="text-lg font-semibold">Program Showcase</h3>
-                <p className="text-sm text-gray-600">Program yang ditampilkan di homepage</p>
+                <h3 className="text-lg font-semibold">Program Studi</h3>
+                <p className="text-sm text-slate-500">
+                  Daftar program sarjana/magister yang muncul di homepage
+                </p>
               </div>
-              <Button variant="outline" size="sm">
-                <Plus className="mr-2 h-4 w-4" />
-                Tambah Program
+              <Button
+                variant="outline"
+                onClick={() =>
+                  addItem(setPrograms, {
+                    id: Date.now(), // ID sementara untuk key render
+                    title: "",
+                    degree: "",
+                    description: "",
+                    link: "",
+                    image: "",
+                    isActive: true,
+                  })
+                }
+              >
+                <Plus className="h-4 w-4 mr-2" /> Tambah Program
               </Button>
             </div>
 
-            {showcaseData.map((program, index) => (
-              <Card key={program.id}>
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-base">{program.title}</CardTitle>
-                    <Button variant="ghost" size="sm" className="text-red-600">
-                      <Trash2 className="h-4 w-4" />
+            <div className="space-y-6">
+              {programs.map((prog, idx) => (
+                <Card key={idx} className="overflow-hidden">
+                  <CardHeader className="flex flex-row items-center justify-between bg-slate-50/50 border-b py-3">
+                    <CardTitle className="text-md font-bold">
+                      {prog.title || `Program #${idx + 1}`}
+                    </CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeItem(setPrograms, idx)}
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
                     </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Judul Program</Label>
-                      <Input
-                        value={program.title}
-                        onChange={(e) => updateShowcaseItem(index, 'title', e.target.value)}
+                  </CardHeader>
+                  <CardContent className="pt-6 space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Judul Program</Label>
+                        <Input
+                          value={prog.title || ""}
+                          onChange={(e) =>
+                            updateArrayField(
+                              setPrograms,
+                              idx,
+                              "title",
+                              e.target.value,
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Gelar</Label>
+                        <Input
+                          value={prog.degree}
+                          onChange={(e) =>
+                            updateArrayField(
+                              setPrograms,
+                              idx,
+                              "degree",
+                              e.target.value,
+                            )
+                          }
+                          placeholder="Contoh: S.Th"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Deskripsi</Label>
+                      <Textarea
+                        value={prog.description}
+                        onChange={(e) =>
+                          updateArrayField(
+                            setPrograms,
+                            idx,
+                            "description",
+                            e.target.value,
+                          )
+                        }
+                        placeholder="Jelaskan singkat mengenai program studi ini..."
                       />
                     </div>
-                    <div>
-                      <Label>Gelar</Label>
-                      <Input
-                        value={program.degree}
-                        onChange={(e) => updateShowcaseItem(index, 'degree', e.target.value)}
-                        placeholder="S.Th, M.Th, etc"
-                      />
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Link Program</Label>
+                        <Input
+                          value={prog.link}
+                          onChange={(e) =>
+                            updateArrayField(
+                              setPrograms,
+                              idx,
+                              "link",
+                              e.target.value,
+                            )
+                          }
+                          placeholder="/program/sarjana-teologi"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Image URL</Label>
+                        <Input
+                          value={prog.image}
+                          onChange={(e) =>
+                            updateArrayField(
+                              setPrograms,
+                              idx,
+                              "image",
+                              e.target.value,
+                            )
+                          }
+                          placeholder="https://images.unsplash.com/..."
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div>
-                    <Label>Deskripsi</Label>
-                    <Textarea
-                      value={program.description}
-                      onChange={(e) => updateShowcaseItem(index, 'description', e.target.value)}
-                      rows={3}
-                    />
-                  </div>
+                    {/* Real-time Image Preview */}
+                    {prog.image && (
+                      <div className="space-y-2">
+                        <Label className="text-xs text-slate-400">
+                          Preview Gambar
+                        </Label>
+                        <div className="relative h-40 w-full overflow-hidden rounded-md border">
+                          <img
+                            src={prog.image}
+                            alt="Preview"
+                            className="h-full w-full object-cover"
+                            onError={(e) =>
+                              (e.currentTarget.src =
+                                "https://placehold.co/600x400?text=Invalid+Image+URL")
+                            }
+                          />
+                        </div>
+                      </div>
+                    )}
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Link Program</Label>
-                      <Input
-                        value={program.link}
-                        onChange={(e) => updateShowcaseItem(index, 'link', e.target.value)}
-                        placeholder="/program/..."
+                    <div className="flex items-center space-x-2 pt-2">
+                      <input
+                        type="checkbox"
+                        id={`active-${idx}`}
+                        className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                        checked={!!prog.isActive}
+                        onChange={(e) =>
+                          updateArrayField(
+                            setPrograms,
+                            idx,
+                            "isActive",
+                            e.target.checked,
+                          )
+                        }
                       />
+                      <Label
+                        htmlFor={`active-${idx}`}
+                        className="text-sm font-medium"
+                      >
+                        Aktif (tampilkan di homepage)
+                      </Label>
                     </div>
-                    <div>
-                      <Label>Image URL</Label>
-                      <Input
-                        value={program.image}
-                        onChange={(e) => updateShowcaseItem(index, 'image', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  {program.image && (
-                    <div>
-                      <Label>Preview</Label>
-                      <img 
-                        src={program.image} 
-                        alt={program.title}
-                        className="h-32 w-full object-cover rounded-md mt-1"
-                      />
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id={`active-${program.id}`}
-                      checked={program.isActive}
-                      onChange={(e) => updateShowcaseItem(index, 'isActive', e.target.checked)}
-                      className="rounded border-gray-300"
-                    />
-                    <Label htmlFor={`active-${program.id}`} className="cursor-pointer">
-                      Aktif (tampilkan di homepage)
-                    </Label>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-
-            <div className="flex gap-3">
-              <Button 
-                onClick={() => handleSave('Program Showcase')} 
-                disabled={isSaving}
-                className="bg-[#C1121F] hover:bg-[#9A0E19]"
-              >
-                <Save className="mr-2 h-4 w-4" />
-                Simpan Program Showcase
-              </Button>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
+
+            <Button
+              onClick={() => handleSave("showcase", programs)}
+              disabled={isSaving}
+              className="bg-[#C1121F] w-full md:w-auto"
+            >
+              {isSaving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Simpan Semua Program
+            </Button>
           </TabsContent>
 
-          {/* OTHER SECTIONS */}
-          <TabsContent value="why-choose">
-            <Card>
-              <CardHeader>
-                <CardTitle>Why Choose STTB Section</CardTitle>
-                <CardDescription>Coming soon...</CardDescription>
-              </CardHeader>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="facilities">
-            <Card>
-              <CardHeader>
-                <CardTitle>Facilities Section</CardTitle>
-                <CardDescription>Coming soon...</CardDescription>
-              </CardHeader>
-            </Card>
-          </TabsContent>
-
+          {/* SECTION: CTA */}
           <TabsContent value="cta">
             <Card>
               <CardHeader>
-                <CardTitle>CTA Section</CardTitle>
-                <CardDescription>Coming soon...</CardDescription>
+                <CardTitle>Call to Action Section</CardTitle>
               </CardHeader>
+              <CardContent className="space-y-4">
+                <Input
+                  placeholder="CTA Title"
+                  value={cta.title || ""}
+                  onChange={(e) => setCta({ ...cta, title: e.target.value })}
+                />
+                <Textarea
+                  placeholder="CTA Description"
+                  value={cta.description || ""}
+                  onChange={(e) =>
+                    setCta({ ...cta, description: e.target.value })
+                  }
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
+                    placeholder="Button Text"
+                    value={cta.buttonText || ""}
+                    onChange={(e) =>
+                      setCta({ ...cta, buttonText: e.target.value })
+                    }
+                  />
+                  <Input
+                    placeholder="Button Link"
+                    value={cta.buttonLink || ""}
+                    onChange={(e) =>
+                      setCta({ ...cta, buttonLink: e.target.value })
+                    }
+                  />
+                </div>
+                <Button
+                  onClick={() => handleSave("cta", cta)}
+                  disabled={isSaving}
+                  className="bg-[#C1121F]"
+                >
+                  Simpan CTA
+                </Button>
+              </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* SECTION: PILLARS & FACILITIES (Placeholder UI logic sama) */}
+          <TabsContent value="pillars" className="space-y-4">
+            <div className="flex justify-between items-center bg-white p-4 rounded-lg border">
+              <div>
+                <h3 className="text-lg font-semibold">Why Choose Us</h3>
+                <p className="text-sm text-slate-500">
+                  Pilar keunggulan yang membedakan kampus kita
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  addItem(setPillars, {
+                    icon: "Star",
+                    title: "",
+                    description: "",
+                  })
+                }
+              >
+                <Plus className="h-4 w-4 mr-2" /> Tambah Pilar
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              {pillars.map((item, idx) => (
+                <Card key={idx}>
+                  <CardContent className="pt-6 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <IconPreview name={item.icon || "Star"} />
+                        <span className="font-bold text-sm">
+                          Pilar #{idx + 1}
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeItem(setPillars, idx)}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>Icon (Lucide)</Label>
+                        <Input
+                          value={item.icon || ""}
+                          onChange={(e) =>
+                            updateArrayField(
+                              setPillars,
+                              idx,
+                              "icon",
+                              e.target.value,
+                            )
+                          }
+                          placeholder="Shield, Zap, Heart, dll"
+                        />
+                      </div>
+                      <div className="md:col-span-2 space-y-2">
+                        <Label>Judul Keunggulan</Label>
+                        <Input
+                          value={item.title || ""}
+                          onChange={(e) =>
+                            updateArrayField(
+                              setPillars,
+                              idx,
+                              "title",
+                              e.target.value,
+                            )
+                          }
+                          placeholder="Contoh: Kurikulum Berbasis Industri"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Deskripsi Singkat</Label>
+                      <Textarea
+                        value={item.description || ""}
+                        onChange={(e) =>
+                          updateArrayField(
+                            setPillars,
+                            idx,
+                            "description",
+                            e.target.value,
+                          )
+                        }
+                        placeholder="Jelaskan mengapa poin ini unggul..."
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <Button
+              onClick={() => handleSave("pillars", pillars)}
+              disabled={isSaving}
+              className="bg-[#C1121F]"
+            >
+              {isSaving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Simpan Why Choose
+            </Button>
+          </TabsContent>
+          <TabsContent value="facilities" className="space-y-4">
+            <div className="flex justify-between items-center bg-white p-4 rounded-lg border">
+              <div>
+                <h3 className="text-lg font-semibold">Fasilitas Kampus</h3>
+                <p className="text-sm text-slate-500">
+                  Daftar sarana dan prasarana penunjang belajar
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  addItem(setFacilities, {
+                    title: "",
+                    image: "",
+                    description: "",
+                  })
+                }
+              >
+                <Plus className="h-4 w-4 mr-2" /> Tambah Fasilitas
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {facilities.map((item, idx) => (
+                <Card key={idx}>
+                  <CardContent className="pt-6 space-y-4">
+                    <div className="flex justify-between items-center border-b pb-2">
+                      <span className="font-bold text-[#C1121F]">
+                        Fasilitas #{idx + 1}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeItem(setFacilities, idx)}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Nama Fasilitas</Label>
+                      <Input
+                        value={item.title || ""}
+                        onChange={(e) =>
+                          updateArrayField(
+                            setFacilities,
+                            idx,
+                            "title",
+                            e.target.value,
+                          )
+                        }
+                        placeholder="Contoh: Perpustakaan Digital"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Image URL</Label>
+                      <Input
+                        value={item.image || ""}
+                        onChange={(e) =>
+                          updateArrayField(
+                            setFacilities,
+                            idx,
+                            "image",
+                            e.target.value,
+                          )
+                        }
+                        placeholder="https://..."
+                      />
+                    </div>
+
+                    {item.image && (
+                      <div className="h-32 w-full rounded-md overflow-hidden border">
+                        <img
+                          src={item.image}
+                          alt="Preview"
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label>Deskripsi</Label>
+                      <Textarea
+                        value={item.description || ""}
+                        onChange={(e) =>
+                          updateArrayField(
+                            setFacilities,
+                            idx,
+                            "description",
+                            e.target.value,
+                          )
+                        }
+                        placeholder="Jelaskan fungsi fasilitas ini..."
+                        className="h-20"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <Button
+              onClick={() => handleSave("facilities", facilities)}
+              disabled={isSaving}
+              className="bg-[#C1121F]"
+            >
+              {isSaving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Simpan Fasilitas
+            </Button>
           </TabsContent>
         </Tabs>
       </div>

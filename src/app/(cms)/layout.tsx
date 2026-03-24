@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Sidebar from '@/components/layout/Sidebar'
 import Topbar from '@/components/layout/Topbar'
+import { Toaster } from "sonner";
 
 export default function CmsLayout({
   children,
@@ -13,6 +14,9 @@ export default function CmsLayout({
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* 2. Tambahkan Toaster di sini agar muncul di paling atas (z-index) */}
+      <Toaster position="top-center" richColors closeButton />
+
       {/* Sidebar */}
       <Sidebar
         collapsed={collapsed}
@@ -30,7 +34,9 @@ export default function CmsLayout({
           ${collapsed ? 'ml-16' : 'ml-60'}
         `}
       >
-        {children}
+        <div className="p-4"> {/* Tambahkan padding sedikit agar konten tidak nempel */}
+           {children}
+        </div>
       </main>
     </div>
   )

@@ -19,3 +19,6 @@ user
 
 roles page
 
+
+
+ntar hubungin route dari regis dan login kalo admin  royte ke dashboard kalo bukan admin user biasa routes ke home page.

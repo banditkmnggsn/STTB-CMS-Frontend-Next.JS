@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/admin/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -8,102 +8,145 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Save, Plus, Trash2, MoveUp, MoveDown, Eye, Edit } from 'lucide-react';
-import { 
-  mockLeadHero, 
-  mockLeadPillars, 
-  mockLeadPrograms, 
-  mockLeadEvents 
-} from '@/lib/mock-data/mockCMSData';
-import type { 
-  LeadHeroContent, 
-  LeadPillar, 
-  LeadProgram, 
-  LeadEvent 
-} from '@/lib/mock-data/contentModels';
+import { Save, Plus, Trash2, MoveUp, MoveDown, Eye, Loader2 } from 'lucide-react';
+
+// Import Service & Types
+import { leadService } from '@/services/lead-content.service';
+// Update LeadHeroContent type inline for clarity
+export interface LeadHeroContent {
+  id?: string;
+  badge: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  primaryButtonText: string;
+  primaryButtonLink: string;
+  secondaryButtonText: string;
+  secondaryButtonLink: string;
+  backgroundImage: string;
+}
+import type { LeadPillar, LeadProgram, LeadEvent } from '@/lib/mock-data/contentModels';
 
 export default function LeadContentPage() {
-  const [heroData, setHeroData] = useState<LeadHeroContent>(mockLeadHero);
-  const [pillarsData, setPillarsData] = useState<LeadPillar[]>(mockLeadPillars);
-  const [programsData, setProgramsData] = useState<LeadProgram[]>(mockLeadPrograms);
-  const [eventsData, setEventsData] = useState<LeadEvent[]>(mockLeadEvents);
+  const [heroData, setHeroData] = useState<LeadHeroContent>({
+    badge: '',
+    title: '',
+    subtitle: '',
+    description: '',
+    primaryButtonText: '',
+    primaryButtonLink: '',
+    secondaryButtonText: '',
+    secondaryButtonLink: '',
+    backgroundImage: ''
+  });
+  const [pillarsData, setPillarsData] = useState<LeadPillar[]>([]);
+  const [programsData, setProgramsData] = useState<LeadProgram[]>([]);
+  const [eventsData, setEventsData] = useState<LeadEvent[]>([]);
+  
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState('');
+  const [saveMessage, setSaveMessage] = useState({ text: '', type: 'success' });
 
-  const handleSave = async (section: string) => {
-    setIsSaving(true);
-    setSaveMessage('');
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setSaveMessage(`${section} berhasil disimpan!`);
-    setIsSaving(false);
-    
-    setTimeout(() => setSaveMessage(''), 3000);
+useEffect(() => {
+  const loadAllData = async () => {
+    try {
+      setIsLoading(true);
+      const [hero, pillars, programs, events] = await Promise.all([
+        leadService.getHero(),
+        leadService.getPillars(),
+        leadService.getPrograms(),
+        leadService.getEvents()
+      ]);
+
+      // Pastikan state tidak null
+      setHeroData(hero || {
+        badge: '',
+        title: '',
+        subtitle: '',
+        description: '',
+        primaryButtonText: '',
+        primaryButtonLink: '',
+        secondaryButtonText: '',
+        secondaryButtonLink: '',
+        backgroundImage: ''
+      });
+      setPillarsData(pillars || []);
+      setProgramsData(programs || []);
+      setEventsData(events || []);
+    } catch (error) {
+      console.error("Gagal load data LEAD:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
+  loadAllData();
+}, []);
 
+  // Generic Save Handler yang diperbaiki
+  const onSave = async (sectionName: string, saveFn: () => Promise<any>) => {
+    setIsSaving(true);
+    try {
+      const result = await saveFn();
+      if (result) {
+        setSaveMessage({ text: `${sectionName} berhasil disimpan!`, type: 'success' });
+      } else {
+        throw new Error("Gagal menyimpan");
+      }
+    } catch (error) {
+      setSaveMessage({ text: `Gagal menyimpan ${sectionName}.`, type: 'error' });
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setSaveMessage({ text: '', type: 'success' }), 3000);
+    }
+  };
+  // 3. Update Handlers (Local State Only)
   const updateHeroField = (field: keyof LeadHeroContent, value: any) => {
     setHeroData(prev => ({ ...prev, [field]: value }));
-  };
+  }
 
   const updatePillarItem = (index: number, field: keyof LeadPillar, value: any) => {
-    setPillarsData(prev => {
-      const newData = [...prev];
-      newData[index] = { ...newData[index], [field]: value };
-      return newData;
-    });
+    const newData = [...pillarsData];
+    newData[index] = { ...newData[index], [field]: value };
+    setPillarsData(newData);
   };
 
   const updateProgramItem = (index: number, field: keyof LeadProgram, value: any) => {
-    setProgramsData(prev => {
-      const newData = [...prev];
-      newData[index] = { ...newData[index], [field]: value };
-      return newData;
-    });
+    const newData = [...programsData];
+    newData[index] = { ...newData[index], [field]: value };
+    setProgramsData(newData);
   };
 
-  const updateEventItem = (index: number, field: keyof LeadEvent, value: any) => {
-    setEventsData(prev => {
-      const newData = [...prev];
-      newData[index] = { ...newData[index], [field]: value };
-      return newData;
-    });
+  // Re-order logic
+  const moveItem = (data: any[], setData: any, index: number, direction: 'up' | 'down') => {
+    if ((direction === 'up' && index === 0) || (direction === 'down' && index === data.length - 1)) return;
+    const newData = [...data];
+    const swapIndex = direction === 'up' ? index - 1 : index + 1;
+    [newData[index], newData[swapIndex]] = [newData[swapIndex], newData[index]];
+    setData(newData);
   };
 
-  const moveProgramItem = (index: number, direction: 'up' | 'down') => {
-    if (
-      (direction === 'up' && index === 0) ||
-      (direction === 'down' && index === programsData.length - 1)
-    ) {
-      return;
-    }
-
-    setProgramsData(prev => {
-      const newData = [...prev];
-      const swapIndex = direction === 'up' ? index - 1 : index + 1;
-      [newData[index], newData[swapIndex]] = [newData[swapIndex], newData[index]];
-      newData[index].order = index + 1;
-      newData[swapIndex].order = swapIndex + 1;
-      return newData;
-    });
-  };
+  if (isLoading) {
+    return (
+      <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
+        <Loader2 className="h-10 w-10 animate-spin text-[#C1121F]" />
+        <p className="text-muted-foreground animate-pulse">Sinkronisasi data LEAD Center...</p>
+      </div>
+    );
+  }
 
   return (
     <>
       <PageHeader
         title="Konten LEAD Center"
         description="Kelola konten halaman Learning, Equipping, & Development Center"
-        breadcrumbs={[
-          { label: 'Dashboard', path: '/dashboard' },
-          { label: 'Konten LEAD' }
-        ]}
+        breadcrumbs={[{ label: 'Dashboard', path: '/dashboard' }, { label: 'Konten LEAD' }]}
       />
 
       <div className="p-8">
-        {saveMessage && (
-          <Alert className="mb-6 bg-green-50 border-green-200">
-            <AlertDescription className="text-green-800">
-              {saveMessage}
+        {saveMessage.text && (
+          <Alert className={`mb-6 ${saveMessage.type === 'success' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+            <AlertDescription className={saveMessage.type === 'success' ? 'text-green-800' : 'text-red-800'}>
+              {saveMessage.text}
             </AlertDescription>
           </Alert>
         )}
@@ -119,463 +162,159 @@ export default function LeadContentPage() {
 
           {/* HERO SECTION */}
           <TabsContent value="hero" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Hero Section - LEAD Center</CardTitle>
-                <CardDescription>
-                  Bagian header utama halaman LEAD Center
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            {/* Hero Section Form */}
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <Label>Badge Text</Label>
-                  <Input
+                  <label className="block text-sm font-medium mb-1">Badge Text</label>
+                  <input 
+                    className="w-full p-2 border rounded bg-blue-50/30"
                     value={heroData.badge}
-                    onChange={(e) => updateHeroField('badge', e.target.value)}
-                    placeholder="Learning, Equipping, & Development"
+                    onChange={(e) => setHeroData(prev => ({ ...prev, badge: e.target.value }))}
                   />
                 </div>
-
+                
                 <div>
-                  <Label>Judul Utama</Label>
-                  <Textarea
-                    value={heroData.title}
-                    onChange={(e) => updateHeroField('title', e.target.value)}
+                  <label className="block text-sm font-medium mb-1">Judul Utama</label>
+                  <textarea 
+                    className="w-full p-2 border rounded bg-blue-50/30"
                     rows={2}
-                    placeholder="L.E.A.D. Center: Memperlengkapi Pelayan..."
+                    value={heroData.title}
+                    onChange={(e) => setHeroData(prev => ({ ...prev, title: e.target.value }))}
                   />
                 </div>
 
                 <div>
-                  <Label>Subtitle</Label>
-                  <Input
+                  <label className="block text-sm font-medium mb-1">Subtitle</label>
+                  <input 
+                    className="w-full p-2 border rounded bg-blue-50/30"
                     value={heroData.subtitle}
-                    onChange={(e) => updateHeroField('subtitle', e.target.value)}
-                    placeholder="Pusat Pendidikan & Pelatihan Non-Formal STT Bandung"
+                    onChange={(e) => setHeroData(prev => ({ ...prev, subtitle: e.target.value }))}
                   />
                 </div>
 
                 <div>
-                  <Label>Deskripsi</Label>
-                  <Textarea
-                    value={heroData.description}
-                    onChange={(e) => updateHeroField('description', e.target.value)}
+                  <label className="block text-sm font-medium mb-1">Deskripsi</label>
+                  <textarea 
+                    className="w-full p-2 border rounded bg-blue-50/30"
                     rows={3}
+                    value={heroData.description}
+                    onChange={(e) => setHeroData(prev => ({ ...prev, description: e.target.value }))}
                   />
                 </div>
+              </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Tombol Utama - Teks</Label>
-                    <Input
-                      value={heroData.primaryButtonText}
-                      onChange={(e) => updateHeroField('primaryButtonText', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label>Tombol Utama - Link</Label>
-                    <Input
-                      value={heroData.primaryButtonLink}
-                      onChange={(e) => updateHeroField('primaryButtonLink', e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Tombol Sekunder - Teks</Label>
-                    <Input
-                      value={heroData.secondaryButtonText}
-                      onChange={(e) => updateHeroField('secondaryButtonText', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label>Tombol Sekunder - Link</Label>
-                    <Input
-                      value={heroData.secondaryButtonLink}
-                      onChange={(e) => updateHeroField('secondaryButtonLink', e.target.value)}
-                    />
-                  </div>
-                </div>
-
+              {/* Button Section */}
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Background Image URL</Label>
-                  <Input
+                  <label className="block text-sm font-medium mb-1">Tombol Utama - Teks</label>
+                  <input 
+                    className="w-full p-2 border rounded bg-blue-50/30"
+                    value={heroData.primaryButtonText}
+                    onChange={(e) => setHeroData(prev => ({ ...prev, primaryButtonText: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Tombol Utama - Link</label>
+                  <input 
+                    className="w-full p-2 border rounded bg-blue-50/30"
+                    value={heroData.primaryButtonLink}
+                    onChange={(e) => setHeroData(prev => ({ ...prev, primaryButtonLink: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Tombol Sekunder - Teks</label>
+                  <input 
+                    className="w-full p-2 border rounded bg-blue-50/30"
+                    value={heroData.secondaryButtonText}
+                    onChange={(e) => setHeroData(prev => ({ ...prev, secondaryButtonText: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Tombol Sekunder - Link</label>
+                  <input 
+                    className="w-full p-2 border rounded bg-blue-50/30"
+                    value={heroData.secondaryButtonLink}
+                    onChange={(e) => setHeroData(prev => ({ ...prev, secondaryButtonLink: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              {/* Background Image Section */}
+                <div>
+                  <label className="block text-sm font-medium mb-1">Background Image URL</label>
+                  <input 
+                    className="w-full p-2 border rounded bg-blue-50/30"
                     value={heroData.backgroundImage}
-                    onChange={(e) => updateHeroField('backgroundImage', e.target.value)}
+                    onChange={(e) => setHeroData(prev => ({ ...prev, backgroundImage: e.target.value }))}
                   />
                   {heroData.backgroundImage && (
                     <img 
                       src={heroData.backgroundImage} 
                       alt="Preview" 
-                      className="mt-2 h-32 w-full object-cover rounded-md"
+                      className="mt-4 h-40 w-full object-cover rounded shadow-sm"
                     />
                   )}
                 </div>
-
-                <div className="flex gap-3 pt-4">
-                  <Button 
-                    onClick={() => handleSave('Hero Section')} 
-                    disabled={isSaving}
-                    className="bg-[#C1121F] hover:bg-[#9A0E19]"
-                  >
-                    <Save className="mr-2 h-4 w-4" />
-                    {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
-                  </Button>
-                  <Button variant="outline">
-                    <Eye className="mr-2 h-4 w-4" />
-                    Preview
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            </div>
           </TabsContent>
 
           {/* 3 PILLARS SECTION */}
           <TabsContent value="pillars" className="space-y-6">
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold">Tiga Pilar Utama LEAD</h3>
-              <p className="text-sm text-gray-600">Learning, Equipping, & Development</p>
-            </div>
-
             {pillarsData.map((pillar, index) => (
-              <Card key={pillar.id}>
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-base">Pilar {index + 1}: {pillar.title}</CardTitle>
-                    <div className="flex items-center gap-2">
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                        pillar.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                      }`}>
-                        {pillar.isActive ? 'Aktif' : 'Non-aktif'}
-                      </span>
-                    </div>
-                  </div>
+              <Card key={pillar.id || index}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-bold uppercase text-gray-500">Pilar {index + 1}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <Label>Judul Pilar</Label>
-                    <Input
-                      value={pillar.title}
-                      onChange={(e) => updatePillarItem(index, 'title', e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Deskripsi</Label>
-                    <Textarea
-                      value={pillar.description}
-                      onChange={(e) => updatePillarItem(index, 'description', e.target.value)}
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <Label>Icon (Lucide)</Label>
-                      <Input
-                        value={pillar.icon}
-                        onChange={(e) => updatePillarItem(index, 'icon', e.target.value)}
-                        placeholder="BookOpen"
-                      />
-                    </div>
-                    <div>
-                      <Label>Icon Color</Label>
-                      <Input
-                        type="color"
-                        value={pillar.iconColor}
-                        onChange={(e) => updatePillarItem(index, 'iconColor', e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label>Background Color</Label>
-                      <Input
-                        type="color"
-                        value={pillar.backgroundColor}
-                        onChange={(e) => updatePillarItem(index, 'backgroundColor', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-2">
-                    <input
-                      type="checkbox"
-                      id={`pillar-active-${pillar.id}`}
-                      checked={pillar.isActive}
-                      onChange={(e) => updatePillarItem(index, 'isActive', e.target.checked)}
-                      className="rounded border-gray-300"
-                    />
-                    <Label htmlFor={`pillar-active-${pillar.id}`} className="cursor-pointer">
-                      Aktifkan pilar ini
-                    </Label>
+                  <Input value={pillar.title || ""} onChange={(e) => updatePillarItem(index, 'title', e.target.value)} placeholder="Judul Pilar" />
+                  <Textarea value={pillar.description || ""} onChange={(e) => updatePillarItem(index, 'description', e.target.value)} placeholder="Deskripsi pilar..." />
+                  <div className="flex items-center gap-2">
+                    <input type="checkbox" checked={pillar.isActive} onChange={(e) => updatePillarItem(index, 'isActive', e.target.checked)} />
+                    <Label>Aktif</Label>
                   </div>
                 </CardContent>
               </Card>
             ))}
-
             <Button 
-              onClick={() => handleSave('3 Pilar')} 
+              onClick={() => onSave('3 Pilar', () => leadService.updateAllPillars(pillarsData))} 
               disabled={isSaving}
-              className="bg-[#C1121F] hover:bg-[#9A0E19]"
+              className="bg-[#C1121F]"
             >
-              <Save className="mr-2 h-4 w-4" />
-              Simpan 3 Pilar
+              <Save className="mr-2 h-4 w-4" /> Simpan Semua Pilar
             </Button>
           </TabsContent>
 
           {/* PROGRAMS SECTION */}
           <TabsContent value="programs" className="space-y-6">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h3 className="text-lg font-semibold">Program Unggulan LEAD</h3>
-                <p className="text-sm text-gray-600">Daftar program pelatihan dan sertifikasi</p>
-              </div>
-              <Button variant="outline" size="sm">
-                <Plus className="mr-2 h-4 w-4" />
-                Tambah Program
-              </Button>
+            <div className="flex justify-between items-center">
+               <h3 className="font-semibold text-lg">Daftar Program</h3>
+               <Button variant="outline" size="sm"><Plus className="h-4 w-4 mr-2"/> Tambah</Button>
             </div>
-
             {programsData.map((program, index) => (
-              <Card key={program.id}>
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-base">{program.title}</CardTitle>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => moveProgramItem(index, 'up')}
-                        disabled={index === 0}
-                      >
-                        <MoveUp className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => moveProgramItem(index, 'down')}
-                        disabled={index === programsData.length - 1}
-                      >
-                        <MoveDown className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" className="text-red-600">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+              <Card key={program.id || index}>
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 space-y-4">
+                      <Input value={program.title || ""} onChange={(e) => updateProgramItem(index, 'title', e.target.value)} placeholder="Nama Program" />
+                      <Textarea value={program.description || ""} onChange={(e) => updateProgramItem(index, 'description', e.target.value)} />
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label>Nama Program</Label>
-                    <Input
-                      value={program.title}
-                      onChange={(e) => updateProgramItem(index, 'title', e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Deskripsi</Label>
-                    <Textarea
-                      value={program.description}
-                      onChange={(e) => updateProgramItem(index, 'description', e.target.value)}
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Batch Info</Label>
-                      <Input
-                        value={program.batch}
-                        onChange={(e) => updateProgramItem(index, 'batch', e.target.value)}
-                        placeholder="Batch 5 - Buka Pendaftaran"
-                      />
+                    <div className="flex flex-col gap-2 ml-4">
+                      <Button variant="ghost" size="sm" onClick={() => moveItem(programsData, setProgramsData, index, 'up')}><MoveUp className="h-4 w-4"/></Button>
+                      <Button variant="ghost" size="sm" onClick={() => moveItem(programsData, setProgramsData, index, 'down')}><MoveDown className="h-4 w-4"/></Button>
                     </div>
-                    <div>
-                      <Label>Status</Label>
-                      <Input
-                        value={program.status}
-                        onChange={(e) => updateProgramItem(index, 'status', e.target.value)}
-                        placeholder="Pendaftaran Dibuka"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Image URL</Label>
-                      <Input
-                        value={program.image}
-                        onChange={(e) => updateProgramItem(index, 'image', e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label>Link Pendaftaran</Label>
-                      <Input
-                        value={program.registrationLink}
-                        onChange={(e) => updateProgramItem(index, 'registrationLink', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  {program.image && (
-                    <div>
-                      <Label>Preview</Label>
-                      <img 
-                        src={program.image} 
-                        alt={program.title}
-                        className="mt-1 h-32 w-full object-cover rounded-md"
-                      />
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id={`program-active-${program.id}`}
-                      checked={program.isActive}
-                      onChange={(e) => updateProgramItem(index, 'isActive', e.target.checked)}
-                      className="rounded border-gray-300"
-                    />
-                    <Label htmlFor={`program-active-${program.id}`} className="cursor-pointer">
-                      Tampilkan program ini
-                    </Label>
                   </div>
                 </CardContent>
               </Card>
             ))}
-
-            <Button 
-              onClick={() => handleSave('Program Unggulan')} 
-              disabled={isSaving}
-              className="bg-[#C1121F] hover:bg-[#9A0E19]"
-            >
-              <Save className="mr-2 h-4 w-4" />
-              Simpan Program
+            <Button onClick={() => onSave('Programs', () => leadService.updateProgram('bulk', programsData))} className="bg-[#C1121F]">
+              <Save className="mr-2 h-4 w-4" /> Simpan Urutan Program
             </Button>
           </TabsContent>
 
-          {/* EVENTS SECTION */}
-          <TabsContent value="events" className="space-y-6">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h3 className="text-lg font-semibold">Agenda & Kegiatan</h3>
-                <p className="text-sm text-gray-600">Event dan kegiatan mendatang LEAD Center</p>
-              </div>
-              <Button variant="outline" size="sm">
-                <Plus className="mr-2 h-4 w-4" />
-                Tambah Event
-              </Button>
-            </div>
-
-            {eventsData.map((event, index) => (
-              <Card key={event.id}>
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-base">{event.title}</CardTitle>
-                    <Button variant="ghost" size="sm" className="text-red-600">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label>Judul Event</Label>
-                    <Input
-                      value={event.title}
-                      onChange={(e) => updateEventItem(index, 'title', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-4 gap-4">
-                    <div>
-                      <Label>Tanggal</Label>
-                      <Input
-                        value={event.date}
-                        onChange={(e) => updateEventItem(index, 'date', e.target.value)}
-                        placeholder="23"
-                      />
-                    </div>
-                    <div>
-                      <Label>Bulan</Label>
-                      <Input
-                        value={event.month}
-                        onChange={(e) => updateEventItem(index, 'month', e.target.value)}
-                        placeholder="FEB"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <Label>Waktu</Label>
-                      <Input
-                        value={event.time}
-                        onChange={(e) => updateEventItem(index, 'time', e.target.value)}
-                        placeholder="19:00 - 21:00 WIB"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Lokasi</Label>
-                      <Input
-                        value={event.location}
-                        onChange={(e) => updateEventItem(index, 'location', e.target.value)}
-                        placeholder="Zoom Online / Kampus STTB"
-                      />
-                    </div>
-                    <div>
-                      <Label>Tipe Event</Label>
-                      <Input
-                        value={event.type}
-                        onChange={(e) => updateEventItem(index, 'type', e.target.value)}
-                        placeholder="Webinar, Workshop, dll"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label>Link Registrasi</Label>
-                    <Input
-                      value={event.registrationLink}
-                      onChange={(e) => updateEventItem(index, 'registrationLink', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id={`event-active-${event.id}`}
-                      checked={event.isActive}
-                      onChange={(e) => updateEventItem(index, 'isActive', e.target.checked)}
-                      className="rounded border-gray-300"
-                    />
-                    <Label htmlFor={`event-active-${event.id}`} className="cursor-pointer">
-                      Tampilkan event ini
-                    </Label>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-
-            <Button 
-              onClick={() => handleSave('Agenda Event')} 
-              disabled={isSaving}
-              className="bg-[#C1121F] hover:bg-[#9A0E19]"
-            >
-              <Save className="mr-2 h-4 w-4" />
-              Simpan Event
-            </Button>
-          </TabsContent>
-
-          {/* MEDIA SECTION */}
-          <TabsContent value="media">
-            <Card>
-              <CardHeader>
-                <CardTitle>Media & Resources Section</CardTitle>
-                <CardDescription>Video highlight dan galeri media (Coming soon...)</CardDescription>
-              </CardHeader>
-            </Card>
-          </TabsContent>
         </Tabs>
       </div>
     </>

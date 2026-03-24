@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
-  FileText,
   Image,
   FolderOpen,
   Tag,
@@ -26,7 +25,6 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Dashboard',         href: '/dashboard',    icon: LayoutDashboard },
-  { label: 'Content',           href: '/content',      icon: FileText        },
   { label: 'Pages',             href: '/pages',        icon: FolderOpen      },
   { label: 'Home Content',      href: '/home-content', icon: LayoutTemplate  },
   { label: 'Lead Content',      href: '/lead-content', icon: Megaphone       },

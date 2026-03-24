@@ -100,8 +100,13 @@ export async function updateRolePermissions(
  * Membuat role baru
  * Endpoint: POST /api/roles
  */
-export async function createRole(payload: { name: string; description: string }): Promise<Role> {
-  const res = await api.post<Role>('/api/roles', payload)
+export async function createRole(payload: { name: string; description: string; permissions?: any }): Promise<Role> {
+  // Selalu pastikan permissions terisi objek kosong jika tidak ada
+  const dataToPost = {
+    ...payload,
+    permissions: payload.permissions || {} 
+  };
+  const res = await api.post<Role>('/api/roles', dataToPost)
   return res.data
 }
 

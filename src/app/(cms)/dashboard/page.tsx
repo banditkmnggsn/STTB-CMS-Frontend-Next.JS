@@ -1,68 +1,65 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { StatsCard } from '@/components/admin/StatsCard'
-import { StatusBadge } from '@/components/admin/StatusBadge'
-import { PageHeader } from '@/components/admin/PageHeader'
-import {
-  FileText,
-  Image,
-  Users,
-  Clock,
-  Calendar,
-} from 'lucide-react'
-import Link from 'next/link'
+import { useEffect, useState } from "react";
+import { StatsCard } from "@/components/admin/StatsCard";
+import { StatusBadge } from "@/components/admin/StatusBadge";
+import { PageHeader } from "@/components/admin/PageHeader";
+import { FileText, Image, Users, Clock, Calendar } from "lucide-react";
+import Link from "next/link";
+import { users } from "@/lib/mock-data/users";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 function getToken() {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem('accessToken')
+  if (typeof window === "undefined") return null;
+  return (
+    localStorage.getItem("accessToken") ?? sessionStorage.getItem("accessToken")
+  );
 }
 
 async function fetchWithAuth(path: string) {
-  const token = getToken()
+  const token = getToken();
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: {
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
-  })
-  if (!res.ok) throw new Error(`Failed to fetch ${path}`)
-  return res.json()
+  });
+  if (!res.ok) throw new Error(`Failed to fetch ${path}`);
+  return res.json();
 }
 
 interface StatsState {
-  totalContent: number
-  pendingReview: number
-  totalMedia: number
-  totalUsers: number
+  totalContent: number;
+  pendingReview: number;
+  totalMedia: number;
+  totalUsers: number;
 }
 
 interface ActivityItem {
-  id: string
-  action: string
-  resourceType: string
-  resourceTitle: string
-  createdAt: string
-  user?: { name: string }
+  id: string;
+  action: string;
+  resourceType: string;
+  resourceTitle: string;
+  createdAt: string;
+  user?: { name: string };
 }
 
 interface PendingItem {
-  id: string
-  title: string
-  status: string
-  type: string
-  publishDate: string
-  author?: { name: string }
+  id: string;
+  title: string;
+  status: string;
+  type: string;
+  publishDate: string;
+  author?: { name: string };
 }
 
 interface MediaItem {
-  id: string
-  originalName: string
-  size: number
-  createdAt: string
-  url: string
+  id: string;
+  originalName: string;
+  size: number;
+  createdAt: string;
+  url: string;
 }
 
 export default function DashboardPage() {
@@ -71,103 +68,106 @@ export default function DashboardPage() {
     pendingReview: 0,
     totalMedia: 0,
     totalUsers: 0,
-  })
-  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([])
-  const [pendingApprovals, setPendingApprovals] = useState<PendingItem[]>([])
-  const [recentMedia, setRecentMedia] = useState<MediaItem[]>([])
-  const [loading, setLoading] = useState(true)
+  });
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+  const [pendingApprovals, setPendingApprovals] = useState<PendingItem[]>([]);
+  const [recentMedia, setRecentMedia] = useState<MediaItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadDashboard() {
       try {
-        const [newsAll, newsPending, mediaRes, usersRes, auditRes] = await Promise.allSettled([
-          fetchWithAuth('/api/news?limit=1'),
-          fetchWithAuth('/api/news?status=draft&limit=10'),
-          fetchWithAuth('/api/media?limit=4'),
-          fetchWithAuth('/api/users?limit=1'),
-          fetchWithAuth('/api/audit-logs?limit=5'),
-        ])
+        const [newsAll, newsPending, mediaRes, usersRes, auditRes] =
+          await Promise.allSettled([
+            fetchWithAuth("/api/news?limit=1"),
+            fetchWithAuth("/api/news?status=draft&limit=10"),
+            fetchWithAuth("/api/media?limit=4"),
+            fetchWithAuth("/api/users?limit=1"),
+            fetchWithAuth("/api/audit-logs?limit=5"),
+          ]);
 
         // Stats
-        if (newsAll.status === 'fulfilled') {
-          setStats(prev => ({
+        if (newsAll.status === "fulfilled") {
+          setStats((prev) => ({
             ...prev,
             totalContent: newsAll.value?.data?.pagination?.total || 0,
-          }))
+          }));
         }
-        if (newsPending.status === 'fulfilled') {
-          const items = newsPending.value?.data?.items || []
-          setStats(prev => ({
+        if (newsPending.status === "fulfilled") {
+          const items = newsPending.value?.data?.items || [];
+          setStats((prev) => ({
             ...prev,
             pendingReview: newsPending.value?.data?.pagination?.total || 0,
-          }))
-          setPendingApprovals(items.slice(0, 3).map((item: any) => ({
-            id: item.id,
-            title: item.title,
-            status: item.status,
-            type: item.type || 'Article',
-            publishDate: item.publishDate || item.createdAt,
-            author: item.author,
-          })))
+          }));
+          setPendingApprovals(
+            items.slice(0, 3).map((item: any) => ({
+              id: item.id,
+              title: item.title,
+              status: item.status,
+              type: item.type || "Article",
+              publishDate: item.publishDate || item.createdAt,
+              author: item.author,
+            })),
+          );
         }
-        if (mediaRes.status === 'fulfilled') {
-          const items = mediaRes.value?.data?.items || []
-          setStats(prev => ({
+        if (mediaRes.status === "fulfilled") {
+          const items = mediaRes.value?.data?.items || [];
+          setStats((prev) => ({
             ...prev,
             totalMedia: mediaRes.value?.data?.pagination?.total || 0,
-          }))
-          setRecentMedia(items)
+          }));
+          setRecentMedia(items);
         }
-        if (usersRes.status === 'fulfilled') {
-          setStats(prev => ({
+        if (usersRes.status === "fulfilled") {
+          setStats((prev) => ({
             ...prev,
             totalUsers: usersRes.value?.data?.pagination?.total || 0,
-          }))
+          }));
         }
-        if (auditRes.status === 'fulfilled') {
-          const items = auditRes.value?.data?.items || []
-          setRecentActivity(items)
+        if (auditRes.status === "fulfilled") {
+          const items = auditRes.value?.data?.items || [];
+          setRecentActivity(items);
         }
       } catch (err) {
-        console.error('Dashboard load error:', err)
+        console.error("Dashboard load error:", err);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
 
-    loadDashboard()
-  }, [])
+    loadDashboard();
+  }, []);
 
   const formatSize = (bytes: number) => {
-    if (!bytes) return '-'
-    return `${(bytes / 1024 / 1024).toFixed(1)} MB`
-  }
+    if (!bytes) return "-";
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  };
 
   const formatDate = (dateStr: string) => {
-    if (!dateStr) return '-'
-    return new Date(dateStr).toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    })
-  }
+    if (!dateStr) return "-";
+    return new Date(dateStr).toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
 
   const formatRelativeTime = (dateStr: string) => {
-    if (!dateStr) return '-'
-    const diff = Date.now() - new Date(dateStr).getTime()
-    const minutes = Math.floor(diff / 60000)
-    if (minutes < 60) return `${minutes} menit lalu`
-    const hours = Math.floor(minutes / 60)
-    if (hours < 24) return `${hours} jam lalu`
-    return `${Math.floor(hours / 24)} hari lalu`
-  }
+    if (!dateStr) return "-";
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 60) return `${minutes} menit lalu`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} jam lalu`;
+    return `${Math.floor(hours / 24)} hari lalu`;
+  };
 
   return (
     <>
       <PageHeader
         title="Dashboard"
         description="Overview of your content management system"
-        breadcrumbs={[{ label: 'Dashboard' }]}
+        breadcrumbs={[{ label: "Dashboard" }]}
       />
 
       <div className="p-8">
@@ -175,30 +175,30 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatsCard
             title="Total Artikel"
-            value={loading ? '...' : String(stats.totalContent)}
+            value={loading ? "..." : String(stats.totalContent)}
             icon={FileText}
-            trend={{ value: 'Total konten CMS', isPositive: true }}
+            trend={{ value: "Total konten CMS", isPositive: true }}
             color="blue"
           />
           <StatsCard
             title="Pending Review"
-            value={loading ? '...' : String(stats.pendingReview)}
+            value={loading ? "..." : String(stats.pendingReview)}
             icon={Clock}
-            trend={{ value: 'Menunggu persetujuan', isPositive: false }}
+            trend={{ value: "Menunggu persetujuan", isPositive: false }}
             color="orange"
           />
           <StatsCard
             title="Total Media"
-            value={loading ? '...' : String(stats.totalMedia)}
+            value={loading ? "..." : String(stats.totalMedia)}
             icon={Image}
-            trend={{ value: 'File di media library', isPositive: true }}
+            trend={{ value: "File di media library", isPositive: true }}
             color="purple"
           />
           <StatsCard
             title="Total Users"
-            value={loading ? '...' : String(stats.totalUsers)}
+            value={loading ? "..." : String(stats.totalUsers)}
             icon={Users}
-            trend={{ value: 'Pengguna terdaftar', isPositive: true }}
+            trend={{ value: "Pengguna terdaftar", isPositive: true }}
             color="green"
           />
         </div>
@@ -209,30 +209,46 @@ export default function DashboardPage() {
             {/* Recent Activity */}
             <div className="bg-white rounded-lg border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Recent Activity
+                </h2>
               </div>
               <div className="divide-y divide-gray-200">
                 {loading ? (
-                  <div className="px-6 py-8 text-center text-sm text-gray-400">Memuat data...</div>
+                  <div className="px-6 py-8 text-center text-sm text-gray-400">
+                    Memuat data...
+                  </div>
                 ) : recentActivity.length === 0 ? (
-                  <div className="px-6 py-8 text-center text-sm text-gray-400">Belum ada aktivitas</div>
+                  <div className="px-6 py-8 text-center text-sm text-gray-400">
+                    Belum ada aktivitas
+                  </div>
                 ) : (
                   recentActivity.map((activity) => (
-                    <div key={activity.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                    <div
+                      key={activity.id}
+                      className="px-6 py-4 hover:bg-gray-50 transition-colors"
+                    >
                       <p className="text-sm text-gray-900">
-                        <span className="font-medium">{activity.user?.name || 'System'}</span>{' '}
-                        <span className="text-gray-600">{activity.action}</span>{' '}
+                        <span className="font-medium">
+                          {activity.user?.name || "System"}
+                        </span>{" "}
+                        <span className="text-gray-600">{activity.action}</span>{" "}
                         <span className="font-medium text-[#C1121F]">
                           {activity.resourceTitle || activity.resourceType}
                         </span>
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">{formatRelativeTime(activity.createdAt)}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {formatRelativeTime(activity.createdAt)}
+                      </p>
                     </div>
                   ))
                 )}
               </div>
               <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
-                <Link href="/audit-logs" className="text-sm text-[#C1121F] hover:text-[#9A0E19] font-medium">
+                <Link
+                  href="/audit-logs"
+                  className="text-sm text-[#C1121F] hover:text-[#9A0E19] font-medium"
+                >
                   Lihat semua aktivitas →
                 </Link>
               </div>
@@ -241,30 +257,46 @@ export default function DashboardPage() {
             {/* Pending Approvals */}
             <div className="bg-white rounded-lg border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">Pending Approvals</h2>
-                <StatusBadge status="in-review" label={`${pendingApprovals.length} pending`} />
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Pending Approvals
+                </h2>
+                <StatusBadge
+                  status="in-review"
+                  label={`${pendingApprovals.length} pending`}
+                />
               </div>
               <div className="divide-y divide-gray-200">
                 {loading ? (
-                  <div className="px-6 py-8 text-center text-sm text-gray-400">Memuat data...</div>
+                  <div className="px-6 py-8 text-center text-sm text-gray-400">
+                    Memuat data...
+                  </div>
                 ) : pendingApprovals.length === 0 ? (
-                  <div className="px-6 py-8 text-center text-sm text-gray-400">Tidak ada konten pending</div>
+                  <div className="px-6 py-8 text-center text-sm text-gray-400">
+                    Tidak ada konten pending
+                  </div>
                 ) : (
                   pendingApprovals.map((item) => (
-                    <div key={item.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                    <div
+                      key={item.id}
+                      className="px-6 py-4 hover:bg-gray-50 transition-colors"
+                    >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h3 className="font-medium text-gray-900">{item.title}</h3>
+                          <h3 className="font-medium text-gray-900">
+                            {item.title}
+                          </h3>
                           <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
                             <span className="flex items-center gap-1">
                               <Users size={14} />
-                              {item.author?.name || '-'}
+                              {item.author?.name || "-"}
                             </span>
                             <span className="flex items-center gap-1">
                               <Calendar size={14} />
                               {formatDate(item.publishDate)}
                             </span>
-                            <span className="text-[#2E90FF] capitalize">{item.type}</span>
+                            <span className="text-[#2E90FF] capitalize">
+                              {item.type}
+                            </span>
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -281,7 +313,10 @@ export default function DashboardPage() {
                 )}
               </div>
               <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
-                <Link href="/publishing" className="text-sm text-[#C1121F] hover:text-[#9A0E19] font-medium">
+                <Link
+                  href="/publishing"
+                  className="text-sm text-[#C1121F] hover:text-[#9A0E19] font-medium"
+                >
                   Lihat publishing queue →
                 </Link>
               </div>
@@ -292,7 +327,9 @@ export default function DashboardPage() {
           <div className="space-y-6">
             {/* Quick Actions */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                Quick Actions
+              </h2>
               <div className="space-y-2">
                 <Link
                   href="/content/new"
@@ -318,19 +355,32 @@ export default function DashboardPage() {
             {/* Recent Media */}
             <div className="bg-white rounded-lg border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Recent Media</h2>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Recent Media
+                </h2>
               </div>
               <div className="p-4 space-y-3">
                 {loading ? (
-                  <div className="text-center text-sm text-gray-400 py-4">Memuat data...</div>
+                  <div className="text-center text-sm text-gray-400 py-4">
+                    Memuat data...
+                  </div>
                 ) : recentMedia.length === 0 ? (
-                  <div className="text-center text-sm text-gray-400 py-4">Belum ada media</div>
+                  <div className="text-center text-sm text-gray-400 py-4">
+                    Belum ada media
+                  </div>
                 ) : (
                   recentMedia.map((media) => (
-                    <div key={media.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                    <div
+                      key={media.id}
+                      className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors"
+                    >
                       <div className="w-12 h-12 bg-gray-100 rounded overflow-hidden flex-shrink-0">
                         {media.url ? (
-                          <img src={`${BASE_URL}${media.url}`} alt={media.originalName} className="w-full h-full object-cover" />
+                          <img
+                            src={`${BASE_URL}${media.url}`}
+                            alt={media.originalName}
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <Image size={20} className="text-gray-400" />
@@ -338,15 +388,23 @@ export default function DashboardPage() {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{media.originalName}</p>
-                        <p className="text-xs text-gray-500">{formatSize(media.size)} • {formatDate(media.createdAt)}</p>
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {media.originalName}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {formatSize(media.size)} •{" "}
+                          {formatDate(media.createdAt)}
+                        </p>
                       </div>
                     </div>
                   ))
                 )}
               </div>
               <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
-                <Link href="/media" className="text-sm text-[#C1121F] hover:text-[#9A0E19] font-medium">
+                <Link
+                  href="/media"
+                  className="text-sm text-[#C1121F] hover:text-[#9A0E19] font-medium"
+                >
                   Lihat semua media →
                 </Link>
               </div>
@@ -355,7 +413,7 @@ export default function DashboardPage() {
         </div>
       </div>
     </>
-  )
+  );
 }
 // Yang sudah connect ke BE:
 
@@ -364,18 +422,16 @@ export default function DashboardPage() {
 // Pending Approvals → GET /api/news?status=draft&limit=10
 // Recent Media → GET /api/media?limit=4 dengan preview gambar
 
-
-
 // raw figma
 // 'use client'
 
 // import { StatsCard } from '@/components/admin/StatsCard'
 // import { StatusBadge } from '@/components/admin/StatusBadge'
 // import { PageHeader } from '@/components/admin/PageHeader'
-// import { 
-//   FileText, 
-//   Image, 
-//   Users, 
+// import {
+//   FileText,
+//   Image,
+//   Users,
 //   Clock,
 //   TrendingUp,
 //   Calendar,
@@ -528,19 +584,19 @@ export default function DashboardPage() {
 //             <div className="bg-white rounded-lg border border-gray-200 p-6">
 //               <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
 //               <div className="space-y-2">
-//                 <Link 
+//                 <Link
 //                   href="/admin/content/new"
 //                   className="block w-full px-4 py-2 bg-[#C1121F] hover:bg-[#9A0E19] text-white text-sm font-medium rounded-lg transition-colors text-center"
 //                 >
 //                   + Create New Content
 //                 </Link>
-//                 <Link 
+//                 <Link
 //                   href="/admin/pages/new"
 //                   className="block w-full px-4 py-2 bg-[#0B1F3B] hover:bg-[#071528] text-white text-sm font-medium rounded-lg transition-colors text-center"
 //                 >
 //                   + Create New Page
 //                 </Link>
-//                 <Link 
+//                 <Link
 //                   href="/admin/media"
 //                   className="block w-full px-4 py-2 bg-[#2E90FF] hover:bg-[#1e7ff5] text-white text-sm font-medium rounded-lg transition-colors text-center"
 //                 >
