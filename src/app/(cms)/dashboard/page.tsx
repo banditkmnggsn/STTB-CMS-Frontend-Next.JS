@@ -6,7 +6,6 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { FileText, Image, Users, Clock, Calendar } from "lucide-react";
 import Link from "next/link";
-import { users } from "@/lib/mock-data/users";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
